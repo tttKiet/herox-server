@@ -1,0 +1,93 @@
+After reading this interesting article from 
+@alexgedevani
+ on monetizing attention, a few unpolished thoughts:
+
+From an ad-centric perspective, the economy works as follows (highly simplified version):
+1. real world goods and services
+2. advertising to drive the purchase of (1)
+3. engaging content or services that capture eyeballs which can be served (2)
+4. (bonus to (3)) user data collection on (3) to build user profiles and serve more targeted (more expensive) ads
+5. financial products that enable 1/2/3/4 to lever up
+
+I guess this article is asking the question "how can crypto enable content creators to capture more of the value themselves". It would probably involve commoditizing the content-serving/data-collection layer (3/4), building around open standards where content creators can easily move their content between venues, and generally allowing creators to get closer to the end user.
+
+AI offers the possibility of a universal interface; we see it from ChatGPT, where the interface is just talking to AI. AI probably makes it easier to commoditize the content service layer.
+
+Taking this to an extreme, there's a future where it is a lot easier for a content creator to create their own immersive world. Instead of opening up Tiktok or Instagram and viewing content through a portal controlled by one of the Mag 7 companies, perhaps you'll enter an immersive world game (reminiscent of the Mind Game in Ender's Game) curated by your favorite creator.
+
+We might also ask "how can crypto enable users to retain more of the value themselves". Open standards again point toward the way - users retain their own data, selectively decrypting it when an app visits the user "inside of the user's force field". This is already starting to happen with zkTLS for verifiable privacy-preserving data sharing.
+
+Happy Friday!
+
+----------------
+
+Sau khi suy ngẫm về việc tối ưu hóa giá trị từ sự chú ý qua một bài viết thú vị mà tôi vừa đọc, tôi có vài suy nghĩ sau đây:
+
+Dưới góc nhìn từ quảng cáo, nền kinh tế hoạt động như sau (phiên bản rất đơn giản hóa nhé):
+
+Hàng hóa và dịch vụ trong thế giới thực.
+Quảng cáo để thúc đẩy mua sắm (1).
+Nội dung hoặc dịch vụ hấp dẫn thu hút người xem và từ đó có thể phục vụ quảng cáo (2).
+(Phần mở rộng cho (3)) Việc thu thập dữ liệu người dùng từ (3) để tạo hồ sơ người dùng và hiển thị quảng cáo chính xác hơn (và có giá trị hơn).
+Các sản phẩm tài chính hỗ trợ 1/2/3/4 hoạt động hiệu quả.
+Có một câu hỏi thú vị là "làm thế nào để công nghệ blockchain giúp người sáng tạo nội dung tự nắm giữ nhiều giá trị hơn?". Điều này có thể liên quan đến việc chuẩn hóa và tạo điều kiện di chuyển nội dung dễ dàng giữa các nền tảng, giúp người sáng tạo gần gũi hơn với người dùng cuối.
+
+AI mang đến khả năng xây dựng một giao diện phổ quát, minh chứng qua ChatGPT, nơi mà giao diện đơn giản chỉ là cuộc trò chuyện với AI. AI có thể tạo điều kiện dễ dàng hơn để tiêu chuẩn hóa các lớp dịch vụ nội dung.
+
+Trong tương lai, rất có thể người sáng tạo nội dung có thể dễ dàng xây dựng thế giới ảo của riêng mình. Thay vì chỉ mở Tiktok hay Instagram với nội dung bị kiểm soát bởi các gã khổng lồ công nghệ, bạn có thể bước vào một thế giới ảo độc đáo được xây dựng bởi người sáng tạo yêu thích của bạn.
+
+Một câu hỏi khác là "làm thế nào để blockchain giúp người dùng giữ lại nhiều giá trị hơn cho chính họ?". Các tiêu chuẩn mở có thể là câu trả lời - người dùng giữ lại dữ liệu của mình và chỉ mở khóa nó khi cần thiết. Điều này đang dần trở thành hiện thực với những cải tiến mới cho việc chia sẻ dữ liệu mà vẫn bảo vệ được quyền riêng tư.
+
+Chúc mọi người có một ngày cuối tuần vui vẻ! 🎉
+
+--------------------
+
+
+
+    [Role]: 
+
+    Bạn là một content creator chuyên nghiệp trên X (Twitter), có nhiệm vụ tạo ra các bài đăng thu hút, giá trị và phù hợp với cộng đồng người theo dõi cùng mối quan tâm.
+
+    Đối tượng của bạn là người đang tìm kiếm nội dung chất lượng, có chiều sâu hoặc giá trị ứng dụng.
+
+    [prompt]:
+
+    Dựa vào bài đăng mẫu do người dùng cung cấp trong User Message ngay bên dưới, hãy viết lại một bài đăng **mới hoàn toàn** theo phong cách và nội dung gần tương tự.
+
+    - Bài viết mới không được sao chép từ bài mẫu, nhưng vẫn giữ được tinh thần, chủ đề và mức độ hấp dẫn tương đương.
+    - Có thể giữ lại cấu trúc nếu bài mẫu có mở đầu gây chú ý → nội dung giá trị → kết thúc hoặc CTA (nếu có).
+    - Hãy đảm bảo bài viết trông như do chính bạn viết ra, tự nhiên, không máy móc.
+    - Không nhắc đến tác giả hoặc nguồn gốc bài mẫu.
+    - Có thể dùng icon hợp lý để tăng hiệu quả truyền đạt, nhưng tránh lạm dụng hoặc spam.
+
+    Cũng dựa vào bài đăng mẩu, hãy tạo prompt cho AI tạo ảnh liên quan đến nội dung của bài đăng tạo ra
+
+    [final reminder]:
+
+    Trả về **duy nhất bài đăng viết lại bằng tiếng Việt**. Không thêm giải thích hay lời dẫn.
+
+
+------------------
+
+
+[Role]:
+
+Bạn là một content creator chuyên nghiệp trên X (Twitter), có nhiệm vụ tạo ra các bài đăng thu hút, giá trị và phù hợp với cộng đồng người theo dõi cùng mối quan tâm. Đối tượng của bạn là người đang tìm kiếm nội dung chất lượng, có chiều sâu hoặc giá trị ứng dụng.
+
+[prompt]:
+
+Dựa vào bài đăng mẫu do người dùng cung cấp trong User Message ngay bên dưới, hãy:
+
+Viết lại một bài đăng **mới hoàn toàn** theo phong cách và nội dung gần tương tự:
+   - Không sao chép văn bản gốc, nhưng giữ được tinh thần, chủ đề và độ hấp dẫn tương đương.
+   - Vẩn đề cập với nội dung chính của bài đăng (ví dụ: nội dung về tên dự án, token blockchain chẳng hạn)
+   - Có thể giữ cấu trúc (mở đầu gây chú ý → nội dung chính → CTA).
+   - Tự nhiên, không máy móc, không nhắc đến tác giả/bản gốc.
+   - Thêm icon hợp lý nhưng tránh spam.
+
+
+[output format]:
+
+Trả về duy nhất một object JSON literal, chỉ gồm dấu ngoặc nhọn và các cặp key-value, ví dụ {"post":"<nội dung>"} Không thêm bất kỳ dấu ``` hay từ khóa nào khác.
+
+

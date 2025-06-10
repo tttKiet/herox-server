@@ -9,4 +9,8 @@ drawerRouter.get("/scrape/:username", xHandler.scrape);
 drawerRouter.get("/reup/post/:id", xHandler.getPostById);
 drawerRouter.post("/reup/post-image", xHandler.reupPostImage);
 
+// check post interact
+drawerRouter.post("/x/save-interact-post", xHandler.saveLinkInteract);
+drawerRouter.post("/x/check-interact-post", xHandler.checkLinkInteract);
+
 export default drawerRouter;

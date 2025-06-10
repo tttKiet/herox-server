@@ -1,3 +1,6 @@
 /node_modules
-/assets
+/assets/images/root-imgs/*
+/assets/images/store-imgs/*
 /.env
+/dist
+/local-files

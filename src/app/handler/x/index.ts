@@ -3,7 +3,11 @@ import GpmHandler from "../../../class/GpmHandler";
 import { logger } from "../../../utils/logger";
 import puppeteer from "puppeteer";
 import { IFunctionHandler } from "../../../utils";
-import { IPostImgReg } from "../../../utils/interfaces";
+import {
+  IPost,
+  IPostImgReg,
+  IUserInteractPost,
+} from "../../../utils/interfaces";
 import N8nHelper from "../../../class/N8nHelper";
 import { ObjectId } from "mongodb";
 import { getCollection } from "../../../utils/mongoDb";
@@ -12,16 +16,6 @@ import {
   getRandomImageBase64,
   saveHostedImageToStore,
 } from "../../../utils/store-img";
-
-export interface IPost {
-  _id?: ObjectId;
-  status: "pending" | "error" | "success";
-  content: string;
-  localPath?: string | null;
-  imageUrl?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 class XHandler {
   constructor() {}
@@ -233,6 +227,120 @@ class XHandler {
     } finally {
     }
   };
+
+  public saveLinkInteract: RequestHandler<Partial<IUserInteractPost>> =
+    async function (req, res) {
+      const {
+        postId,
+        action,
+        authorUsername,
+        targetUsername,
+      }: Partial<IUserInteractPost> = req.body as Partial<IUserInteractPost>;
+
+      if (!postId || !authorUsername || !targetUsername) {
+        logger.error("Missing input!");
+        res.status(400).json({ ok: false, message: "Missing input!" });
+        return;
+      }
+      // convert input
+      const urlArray = postId.split("/");
+      const lastPostId = urlArray[urlArray.length - 1];
+      logger.info("Save post id: ", lastPostId);
+
+      const lastAuthorUsername = authorUsername.toLowerCase().trim();
+      const lastTargetUsername = targetUsername.toLowerCase().trim();
+
+      try {
+        const interactPostCol =
+          getCollection<IUserInteractPost>("interactPosts");
+        const postDocs = await interactPostCol.findOne({
+          postId: lastPostId,
+          authorUsername: lastAuthorUsername,
+        });
+        if (postDocs) {
+          // return success
+          res.status(200).json({
+            ok: true,
+            data: postDocs,
+          });
+          return;
+        }
+
+        // create doc
+        const postInteract: IUserInteractPost = {
+          authorUsername: lastAuthorUsername,
+          action: action ? "commented" : undefined,
+          targetUsername: lastTargetUsername,
+          postId: lastPostId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        const postDocResp = await interactPostCol.insertOne(postInteract);
+
+        res.status(200).json({
+          ok: true,
+          data: postDocResp,
+        });
+        return;
+      } catch (err: any) {
+        console.error("Error:", err.message);
+        res.status(500).json({
+          ok: false,
+          error: err.message,
+        });
+        return;
+      }
+    };
+
+  public checkLinkInteract: RequestHandler<Partial<IUserInteractPost>> =
+    async function (req, res) {
+      const { authorUsername, targetUsername }: Partial<IUserInteractPost> =
+        req.body as Partial<IUserInteractPost>;
+
+      if (!authorUsername || !targetUsername) {
+        logger.error("Missing input!");
+        res.status(400).json({ ok: false, message: "Missing input!" });
+        return;
+      }
+
+      const lastAuthorUsername = authorUsername.toLowerCase().trim();
+      const lastTargetUsername = targetUsername.toLowerCase().trim();
+      console.log(lastAuthorUsername);
+
+      try {
+        const interactPostCol =
+          getCollection<IUserInteractPost>("interactPosts");
+        const postDocs = await interactPostCol
+          .find({
+            authorUsername: lastAuthorUsername,
+            // targetUsername: lastTargetUsername,
+          })
+          .toArray();
+
+        if (postDocs) {
+          // return success
+          res.status(200).json({
+            ok: true,
+            data: postDocs,
+          });
+          return;
+        }
+
+        res.status(200).json({
+          ok: true,
+          data: null,
+        });
+        return;
+      } catch (err: any) {
+        console.error("Error:", err.message);
+        res.status(500).json({
+          ok: false,
+          error: err?.message || "Terminal server!",
+        });
+        return;
+      }
+    };
 }
 
 interface ICreatePostImg extends IPostImgReg {
@@ -248,7 +356,7 @@ async function createPostImg({
 }: ICreatePostImg) {
   const n8nHelper = new N8nHelper();
   const postsCol = getCollection<IPost>("posts");
-  console.log("folderName: ", folderName);
+  console.log("Folder Name: ", folderName);
 
   const imgRootBase64 = await getRandomImageBase64(folderName);
 
@@ -296,6 +404,8 @@ async function createPostImg({
       { _id: insertedId },
       { $set: { status: "error", updatedAt: new Date() } }
     );
+    console.log("err: ", err);
+
     logger.error(`Post ${insertedId} → error: ${err.message}`);
   }
 }

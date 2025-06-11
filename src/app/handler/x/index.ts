@@ -16,6 +16,9 @@ import {
   getRandomImageBase64,
   saveHostedImageToStore,
 } from "../../../utils/store-img";
+import Payment from "../../../class/Payment";
+
+const payment = new Payment();
 
 class XHandler {
   constructor() {}
@@ -136,12 +139,8 @@ class XHandler {
     req,
     res
   ) {
-    const {
-      postContent,
-      folderName,
-      isCreateImg,
-      accountVerified,
-    }: IPostImgReg = req.body;
+    const { postContent, folderName, isCreateImg, accountVerified, apiKey } =
+      req.body;
 
     if (
       !postContent ||
@@ -195,6 +194,7 @@ class XHandler {
         folderName,
         accountVerified,
       });
+      payment.useCreateImg({ memberId: apiKey, postId: insertedId.toString() });
       return;
     } catch (err: any) {
       console.error("Error:", err.message);
@@ -230,12 +230,7 @@ class XHandler {
 
   public saveLinkInteract: RequestHandler<Partial<IUserInteractPost>> =
     async function (req, res) {
-      const {
-        postId,
-        action,
-        authorUsername,
-        targetUsername,
-      }: Partial<IUserInteractPost> = req.body as Partial<IUserInteractPost>;
+      const { postId, action, authorUsername, targetUsername } = req.body;
 
       if (!postId || !authorUsername || !targetUsername) {
         logger.error("Missing input!");
@@ -282,6 +277,7 @@ class XHandler {
           ok: true,
           data: postDocResp,
         });
+        // create payment
         return;
       } catch (err: any) {
         console.error("Error:", err.message);
@@ -356,7 +352,7 @@ async function createPostImg({
 }: ICreatePostImg) {
   const n8nHelper = new N8nHelper();
   const postsCol = getCollection<IPost>("posts");
-  console.log("Folder Name: ", folderName);
+  logger.info("Folder Name: ", folderName);
 
   const imgRootBase64 = await getRandomImageBase64(folderName);
 
@@ -399,12 +395,13 @@ async function createPostImg({
     await postsCol.updateOne({ _id: insertedId }, { $set: updateFields });
     logger.info(`Process ${insertedId} → done`);
   } catch (err: any) {
+    console.log("err: ", err);
+
     // 4b) Nếu lỗi, cập nhật status = error
     await postsCol.updateOne(
       { _id: insertedId },
       { $set: { status: "error", updatedAt: new Date() } }
     );
-    console.log("err: ", err);
 
     logger.error(`Post ${insertedId} → error: ${err.message}`);
   }

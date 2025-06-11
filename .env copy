@@ -1,0 +1,19 @@
+POST_SERVER = "3000"
+API_GPM_URL = "http://127.0.0.1:19995"
+
+MONGODB_URL = "mongodb://herox:123%40123@mongodb:27017/"
+MONGODB_DB_NAME = "x-n8n-kaito"
+
+API_N8N_HELPER_REUP_POST_IMG_PRO = "http://n8n:5678/webhook/2f431a8b-3c44-48b7-8add-8f1dd3a56583"
+API_N8N_HELPER_REUP_POST_IMG_TEST = "http://localhost:5678/webhook-test/2f431a8b-3c44-48b7-8add-8f1dd3a56583"
+
+
+# main
+
+SUBDOMAIN=n8n
+DOMAIN_NAME=prompt-fast-mule.ngrok-free.app
+GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
+
+
+NGROK_AUTHTOKEN=2wXmXwhDB3aZXr7ucPZj0ZUgZtc_7o7kQvGkjStzJ7YZsSngh
+NGROK_STATIC_DOMAIN=prompt-fast-mule.ngrok-free.app

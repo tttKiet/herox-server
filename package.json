@@ -5,9 +5,9 @@
   "scripts": {
     "start:production": "node dist/index.js",
     "start:dev": "nodemon --watch src --ext ts --exec \"ts-node src/index.ts\"",
-    "start:n8n-ngrok": "npx cross-env WEBHOOK_URL=https://prompt-fast-mule.ngrok-free.app npx n8n",
+    "start:n8n-ngrok": "npx cross-env WEBHOOK_URL=ruling-shepherd-strangely.ngrok-free.app npx n8n",
     "start:n8n": "npx n8n",
-    "start:ngrok": "ngrok http --url=prompt-fast-mule.ngrok-free.app 3000",
+    "start:ngrok": "ngrok http --url=ruling-shepherd-strangely.ngrok-free.app 3000",
     "build": "rimraf dist && tsc"
   },
   "author": "",

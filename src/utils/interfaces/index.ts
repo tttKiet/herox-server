@@ -26,3 +26,22 @@ export interface IUserInteractPost {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface IAdmin {
+  _id?: ObjectId;
+  fullName: string;
+  type: "admin" | "member";
+  permisson?: string | undefined;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IPayment {
+  _id?: ObjectId;
+  memberId: string | ObjectId;
+  postId: string | ObjectId;
+  status: "pending" | "error" | "success";
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

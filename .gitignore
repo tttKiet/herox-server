@@ -1,4 +1,5 @@
 /node_modules
+/ui/node_modules
 /assets/images/root-imgs/*
 /assets/images/store-imgs/*
 /.env

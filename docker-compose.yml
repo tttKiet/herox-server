@@ -12,6 +12,8 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=herox
       - MONGO_INITDB_ROOT_PASSWORD=123@123
     restart: unless-stopped
+    networks:
+      - herox-network
 
   # N8n
   n8n:
@@ -50,6 +52,8 @@ services:
       - traefik.http.middlewares.n8n.headers.STSIncludeSubdomains=true
       - traefik.http.middlewares.n8n.headers.STSPreload=true
       - traefik.http.routers.n8n.middlewares=n8n@docker
+    networks:
+      - herox-network
 
   # Node.js App
   app:
@@ -68,6 +72,27 @@ services:
     restart: unless-stopped
     volumes:
       - C:/Users/Hero/Documents/Coding/X/trafix kaito - n8n/assets:/app/assets
+    networks:
+      - herox-network
+
+  herox-ui:
+    build:
+      context: .
+      dockerfile: .dh-build/Dockerfile.UI
+    container_name: herox-ui
+    ports:
+      - "4454:8080"
+    depends_on:
+      - app
+    env_file:
+      - /ui/herox-ui/.env.production
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_BASE_URL=http://app:3000
+
+    restart: unless-stopped
+    networks:
+      - herox-network
 
   # Ngrok
   ngrok:
@@ -75,16 +100,23 @@ services:
     container_name: ngrok
     command:
       - "http"
-      - "herox-server:3000" # Kết nối vào service tên là "herox-server"
+      - "herox-ui:4454" # Kết nối vào service tên là "herox-server"
       - --domain=${NGROK_STATIC_DOMAIN}
+    ports:
+      - "4040:4040"
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-      - 4040:4040
     depends_on:
-      - app
+      - herox-ui
     restart: unless-stopped
+    networks:
+      - herox-network
 
 volumes:
   mongodb_data:
   n8n_data:
   n8n_local_file:
+
+networks:
+  herox-network:
+    driver: bridge

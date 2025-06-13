@@ -9,23 +9,29 @@ const managerMiddleWare = new ManagerHandler();
 
 const drawerRouter = Router();
 
-drawerRouter.get("/scrape/:username", xHandler.scrape);
-drawerRouter.get("/reup/post/:id", xHandler.getPostById);
+drawerRouter.get("/api/v1/scrape/:username", xHandler.scrape);
+drawerRouter.get("/api/v1/reup/post/:id", xHandler.getPostById);
 drawerRouter.post(
-  "/reup/post-image",
+  "/api/v1/reup/post-image",
   managerMiddleWare.memberMdw,
   xHandler.reupPostImage
 );
 
 // check post interact
-drawerRouter.post("/x/save-interact-post", xHandler.saveLinkInteract);
-drawerRouter.post("/x/check-interact-post", xHandler.checkLinkInteract);
+drawerRouter.post("/api/v1/x/save-interact-post", xHandler.saveLinkInteract);
+drawerRouter.post("/api/v1/x/check-interact-post", xHandler.checkLinkInteract);
 
 // admin
 drawerRouter.post(
-  "/admin",
+  "/api/v1/admin",
   managerMiddleWare.rootAdminMdw,
   adminHandler.createKeyMember
+);
+
+drawerRouter.post(
+  "/api/v1/member/payment",
+  managerMiddleWare.memberMdw,
+  adminHandler.getPayment
 );
 
 export default drawerRouter;

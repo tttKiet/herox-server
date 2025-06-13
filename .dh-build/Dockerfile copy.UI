@@ -1,0 +1,34 @@
+# Stage 1: Build Next.js UI
+FROM node:18-alpine AS builder
+
+WORKDIR /app/ui/herox-ui
+
+# Copy only UI package files & install dependencies
+COPY ui/herox-ui/package*.json ./
+RUN npm install
+
+# Copy toàn bộ source của UI
+COPY ui/herox-ui ./
+
+# Truyền biến môi trường khi build
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+
+# Build production
+RUN npm run build
+
+# Stage 2: Run app
+FROM node:18-alpine AS runner
+
+WORKDIR /app
+
+# Copy output từ builder stage
+COPY --from=builder /app/ui/herox-ui/.next ./.next
+COPY --from=builder /app/ui/herox-ui/public ./public
+COPY --from=builder /app/ui/herox-ui/node_modules ./node_modules
+COPY --from=builder /app/ui/herox-ui/package.json ./package.json
+COPY --from=builder /app/ui/herox-ui/next.config.ts ./next.config.ts
+
+EXPOSE 8080
+
+CMD ["npm", "start"]

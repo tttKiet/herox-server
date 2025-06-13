@@ -1,7 +1,15 @@
 import { RequestHandler } from "express";
-import { IAdmin } from "../../../utils/interfaces";
+import { IAdmin, IPayment } from "../../../utils/interfaces";
 import { logger } from "../../../utils/logger";
 import { getCollection } from "../../../utils/mongoDb";
+import { ObjectId } from "mongodb";
+
+export interface IDataResGetPaymentSuccess {
+  member: IAdmin | null;
+  billing: {
+    count: number;
+  };
+}
 
 class AdminHandler {
   constructor() {}
@@ -42,6 +50,42 @@ class AdminHandler {
       res.status(200).json({
         ok: true,
         data: repoResp,
+      });
+      return;
+    } catch (err: any) {
+      console.error("Error:", err.message);
+      res.status(500).json({ error: err.message });
+      return;
+    }
+  };
+
+  public getPayment: RequestHandler<IAdmin> = async function (req, res) {
+    const { apiKey } = req.body;
+
+    try {
+      const repoPaymentCol = getCollection<IPayment>("payments");
+      const repoAdminCol = getCollection<IAdmin>("admins");
+
+      // infor admin
+      const adminDocs = await repoAdminCol.findOne({
+        _id: new ObjectId(apiKey),
+      });
+
+      // infor usage
+      const countDocs = await repoPaymentCol.countDocuments({
+        memberId: apiKey,
+      });
+
+      const dataResp: IDataResGetPaymentSuccess = {
+        member: adminDocs,
+        billing: {
+          count: countDocs,
+        },
+      };
+
+      res.status(200).json({
+        ok: true,
+        data: dataResp,
       });
       return;
     } catch (err: any) {

@@ -3,17 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev -p 8081 --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 8080",
     "lint": "next lint"
   },
   "dependencies": {
-    "@heroui/button": "^2.2.21-beta.0",
     "@heroui/react": "^2.8.0-beta.7",
     "@heroui/system": "^2.4.17-beta.0",
     "@heroui/theme": "^2.4.17-beta.0",
+    "axios": "^1.9.0",
+    "feather-icons": "^4.29.2",
     "framer-motion": "^12.17.0",
+    "gsap": "^3.13.0",
     "next": "15.3.3",
     "ogl": "^1.0.11",
     "react": "^19.1.0",

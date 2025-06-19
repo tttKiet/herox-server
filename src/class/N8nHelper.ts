@@ -25,6 +25,7 @@ class N8nHelper {
     imgRootBase64,
     isCreateImg,
     accountVerified,
+    folderName,
   }: Partial<IPostImgRegN8n>) {
     try {
       const resp = await fetch(API_N8N_HELPER_REUP_POST_IMG!, {
@@ -34,6 +35,7 @@ class N8nHelper {
         },
         body: JSON.stringify({
           data: postContent?.split("||"),
+          folderName,
           imgRootBase64,
           isCreateImg,
           accountVerified,

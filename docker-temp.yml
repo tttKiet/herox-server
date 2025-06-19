@@ -1,6 +1,7 @@
 version: "3.8"
+
 services:
-  # # Mongo DB
+  # Mongo DB
   mongodb:
     image: mongo:latest
     container_name: mongodb
@@ -21,7 +22,7 @@ services:
     container_name: n8n
     restart: always
     ports:
-      - "127.0.0.1:5678:5678"
+      - "5678:5678"
     depends_on:
       - mongodb
       - app
@@ -71,10 +72,11 @@ services:
       - NODE_ENV=production
     restart: unless-stopped
     volumes:
-      - C:/Users/Hero/Documents/Coding/X/trafix kaito - n8n/assets:/app/assets
+      - ./assets:/app/assets
     networks:
       - herox-network
 
+  # Frontend UI
   herox-ui:
     build:
       context: .
@@ -89,33 +91,15 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_BASE_URL=http://app:3000
-
     restart: unless-stopped
     networks:
       - herox-network
-
-  # Ngrok
-  # ngrok:
-  #   image: ngrok/ngrok:latest
-  #   container_name: ngrok
-  #   command:
-  #     - "http"
-  #     - "herox-ui:4454" # Kết nối vào service tên là "herox-server"
-  #     - --domain=${NGROK_STATIC_DOMAIN}
-  #   ports:
-  #     - "4040:4040"
-  #   environment:
-  #     - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-  #   depends_on:
-  #     - herox-ui
-  #   restart: unless-stopped
-  #   networks:
-  #     - herox-network
 
 volumes:
   mongodb_data:
   n8n_data:
   n8n_local_file:
+  herox_assets:
 
 networks:
   herox-network:

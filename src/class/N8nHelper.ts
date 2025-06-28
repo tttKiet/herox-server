@@ -3,7 +3,7 @@ import { IPostImgReg } from "../utils/interfaces";
 import { logger } from "../utils/logger";
 
 const API_N8N_HELPER_REUP_POST_IMG =
-  process.env.API_N8N_HELPER_REUP_POST_IMG_PRO;
+  process.env.API_N8N_HELPER_REUP_POST_IMG_TEST;
 
 export interface IPostImgRegN8n extends IPostImgReg {
   imgRootBase64: string;
@@ -45,6 +45,7 @@ class N8nHelper {
       const res: IResN8nPostImage = await resp.json();
       return res;
     } catch (error: any) {
+      console.log(error);
       logger.error(error?.message);
       return null;
     }

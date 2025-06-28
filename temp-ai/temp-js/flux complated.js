@@ -1,20 +1,43 @@
-const REQUEST_ID = "90cfa884-8141-4893-a931-d598126ac1af";
-const FAL_KEY =
-  "b60ed0c4-3daf-4eab-8f4f-75a5b89db6c6:03039d793b1833bf8a018551d6be40f2";
+const apiKey = "sk-57303afb6ae943e9b1ab0d38b974d4dc";
+const prompt = "Tôi là ai";
 
-try {
-  const resp = await fetch(
-    `https://queue.fal.run/fal-ai/flux/requests/${REQUEST_ID}`,
-    {
+const systemMessage = `
+Your tone is always:
+- Positive, open-minded, slightly geeky  
+- Never robotic, never promotional  
+`;
+const body = {
+  messages: [
+    { role: "system", content: systemMessage },
+    { role: "user", content: prompt },
+  ],
+  stream: false,
+  model: "deepseek-chat",
+};
+
+async function fetchAI() {
+  try {
+    const res = await fetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Key ${FAL_KEY}`,
+        Authorization: "Bearer " + apiKey,
+        "Content-Type": "Application/json",
       },
-    }
-  );
+      body: JSON.stringify(body),
+    });
 
-  const res = await resp.json();
-  console.log(res);
-} catch (error) {
-  console.log(error);
+    if (res.ok) {
+      const resp = await res.json();
+      const chatResp = resp.choices[0].message.content;
+      console.log("resp: ", resp);
+
+      return chatResp;
+    } else {
+      console.log("chatResp: ", chatResp);
+      throw new Error("Đã có lỗi xảy ra gọi AI");
+    }
+  } catch (error) {
+    console.log(error);
+    throw new Error("Đã có lỗi xảy ra gọi AI: " + error?.message);
+  }
 }

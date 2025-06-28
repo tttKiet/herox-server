@@ -14,10 +14,10 @@ class ManagerHandler {
     next
   ) {
     const { apiKey } = req.body;
-    console.log("Root, apiKey: ", apiKey);
+    // console.log("Root, apiKey: ", apiKey);
 
     try {
-      if (apiKey != "6848f9d89c5628b0a3827784") {
+      if (apiKey != "buikiet") {
         logger.error("Not admin !");
         res.status(401).json({ ok: false, message: "You aren't admin!" });
         return;
@@ -44,7 +44,6 @@ class ManagerHandler {
     try {
       const repoCol = getCollection<IAdmin>("admins");
       const adminDocs = await repoCol.findOne({ _id: new ObjectId(apiKey) });
-      console.log(adminDocs);
 
       if (!adminDocs) {
         res.status(401).json({ ok: false, message: "Permission denied!" });

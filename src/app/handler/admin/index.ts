@@ -16,10 +16,8 @@ class AdminHandler {
 
   public createKeyMember: RequestHandler<IAdmin> = async function (req, res) {
     const { fullName } = req.body;
-    logger.info("FullName: " + fullName);
 
     if (!fullName) {
-      logger.error("Missing input parameter!");
       res.status(400).json({ ok: false, message: "Missing input parameter!" });
       return;
     }

@@ -148,7 +148,6 @@ class XHandler {
       isCreateImg == undefined ||
       accountVerified == undefined
     ) {
-      logger.error(`Chưa truyền đủ 4 tham số !`);
       res.status(400).json({
         ok: false,
         message: "Chưa truyền đủ 4 tham số !!!",
@@ -158,7 +157,7 @@ class XHandler {
 
     const isFolderExisted = await doesFolderExist(folderName);
     if (!isFolderExisted) {
-      logger.error(`${folderName} is not on server !`);
+      // logger.error(`${folderName} is not on server !`);
       res.status(400).json({
         ok: false,
         message: "Dự án chưa được thêm trên server !!!",
@@ -178,7 +177,7 @@ class XHandler {
 
       const postsCol = getCollection<IPost>("posts");
       const { insertedId } = await postsCol.insertOne(post);
-      logger.success(`Post -> success.`);
+      // logger.success(`Post -> success.`);
 
       res.status(200).json({
         ok: true,
@@ -209,8 +208,6 @@ class XHandler {
   ) {
     const { id } = req.params;
 
-    logger.info("Id: " + id);
-
     try {
       const postsCol = getCollection<IPost>("posts");
       const postDocs = await postsCol.findOne({ _id: new ObjectId(id) });
@@ -240,7 +237,7 @@ class XHandler {
       // convert input
       const urlArray = postId.split("/");
       const lastPostId = urlArray[urlArray.length - 1];
-      logger.info("Save post id: ", lastPostId);
+      // logger.info("Save post id: ", lastPostId);
 
       const lastAuthorUsername = authorUsername.toLowerCase().trim();
       const lastTargetUsername = targetUsername.toLowerCase().trim();
@@ -291,18 +288,17 @@ class XHandler {
 
   public checkLinkInteract: RequestHandler<Partial<IUserInteractPost>> =
     async function (req, res) {
-      const { authorUsername, targetUsername }: Partial<IUserInteractPost> =
-        req.body as Partial<IUserInteractPost>;
+      const { authorUsername, targetUsername, limit = 200 } = req.body;
 
       if (!authorUsername || !targetUsername) {
-        logger.error("Missing input!");
+        // logger.error("Missing input!");
         res.status(400).json({ ok: false, message: "Missing input!" });
         return;
       }
 
       const lastAuthorUsername = authorUsername.toLowerCase().trim();
       const lastTargetUsername = targetUsername.toLowerCase().trim();
-      console.log(lastAuthorUsername);
+      // console.log(lastAuthorUsername);
 
       try {
         const interactPostCol =
@@ -310,8 +306,9 @@ class XHandler {
         const postDocs = await interactPostCol
           .find({
             authorUsername: lastAuthorUsername,
-            // targetUsername: lastTargetUsername,
+            targetUsername: lastTargetUsername,
           })
+          .limit(limit)
           .toArray();
 
         if (postDocs) {
@@ -352,7 +349,7 @@ async function createPostImg({
 }: ICreatePostImg) {
   const n8nHelper = new N8nHelper();
   const postsCol = getCollection<IPost>("posts");
-  logger.info("Folder Name: ", folderName);
+  // logger.info("Folder Name: ", folderName);
 
   const imgRootBase64 = await getRandomImageBase64(folderName);
 
@@ -381,8 +378,8 @@ async function createPostImg({
         updatedAt: new Date(),
       };
 
-      logger.success(`Save post to pc → success`);
-      logger.success(`Post ${insertedId} → success`);
+      // logger.success(`Save post to pc → success`);
+      // logger.success(`Post ${insertedId} → success`);
     } else {
       updateFields = {
         status: "error",
@@ -393,7 +390,7 @@ async function createPostImg({
     }
 
     await postsCol.updateOne({ _id: insertedId }, { $set: updateFields });
-    logger.info(`Process ${insertedId} → done`);
+    // logger.info(`Process ${insertedId} → done`);
   } catch (err: any) {
     console.log("err: ", err);
 

@@ -25,7 +25,7 @@ async function fetchAI(apiKey: string, body: IBodyChatRespDeepseek) {
 
     if (res.ok) {
       const chatResp = resp?.choices[0]?.message?.content;
-      // console.log({ resp: res.status, chatResp });
+      console.log({ resp: res.status, chatResp });
       return chatResp;
     } else {
       console.log("Error: ", resp.error);

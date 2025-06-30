@@ -1,20 +1,21 @@
-0x029a3e281fa21995e1158d426a227b5ca363a532;
-0x3039540af0577d93799713a3aeb5db92c76da377;
-0x534b4e75be3085da45b7ed5d7eda8fde1f5a90a4;
-0x9fe25379c081d68fab629a9e77549b52ec04de7a;
-0x99490b66c4cb2373eb10820d9a97245dff356799;
-0x951d4c35e46af5f7e005db5402b7a7b1c235b1e7;
-0x1308ba96a805c7c2af59b9ed1df672df09643d5e;
-0x36d9eef1c6010e48220ecd231eab2e9fcf972eb8;
-0xdb13a1016bd4797dec5608a001f6447d5d5f9ea6;
-0x947ed1d516de40ee570d62596bdf597336c8d8bd;
-0x9ba19c91ea5ee7ae3d1261beed6b9bda23f97b13;
-0x12dbff5b94726a18be862f0badeb5e4f916017b6;
-0x0629e8dc6a53c7ffaed1f48e3085a934b9a476ce;
-0x86105fcf979eaebb5b2a2ee710fef9b73e9fb6ee;
-0x7a7743bc00b3c0072ef74e1efd30f1a73c0c077f;
-0x1248f5be5416bd10be8fc4bfabcef03510e6db9e;
-0x5f2f38bb58b6b0e8a8a86690df46fe158c3f0568;
-0xdc20997a13e55395bb4b9a837801f46eaf00f909;
-0xeef432f6b337553fae8c43ac3b9e7aceffa76c1c;
-0x8fab6ff8568d003805b1c7d62625081f901346c9;
+function escapeForJSON(str) {
+  return str
+    .replace(/\\/g, "\\\\") // escape backslash
+    .replace(/"/g, '\\"') // escape double quote
+    .replace(/\n/g, "\\n") // escape newline
+    .replace(/\r/g, "\\r") // escape carriage return
+    .replace(/\t/g, "\\t"); // escape tab
+}
+
+const tweetTextElement = document.querySelectorAll(
+  'div[data-testid="tweetText"]'
+);
+if (tweetTextElement.length > 0) {
+  const eLast = tweetTextElement[tweetTextElement.length - 1];
+
+  let t = eLast.textContent.trim(),
+    e = t.split(/\s+/),
+    l = e.slice(0, 320),
+    i = l.join(" ");
+  return escapeForJSON(i);
+} else return JSON.stringify("");

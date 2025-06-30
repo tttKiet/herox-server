@@ -21,17 +21,19 @@ async function fetchAI(apiKey: string, body: IBodyChatRespDeepseek) {
       },
       body: JSON.stringify(body),
     });
+    const resp = await res.json();
 
     if (res.ok) {
-      const resp = await res.json();
-      const chatResp = resp.choices[0].message.content;
+      const chatResp = resp?.choices[0]?.message?.content;
+      // console.log({ resp: res.status, chatResp });
       return chatResp;
     } else {
-      throw new Error("Đã có lỗi xảy ra gọi AI");
+      console.log("Error: ", resp.error);
+      throw new Error(resp?.error?.message || "Đã có lỗi xảy ra gọi AI!");
     }
-  } catch (error) {
+  } catch (error: any) {
     console.log(error);
-    throw new Error("Đã có lỗi xảy ra gọi AI catch!");
+    throw new Error(error?.message || "Đã có lỗi xảy ra gọi AI catch!");
   }
 }
 

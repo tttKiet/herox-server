@@ -18,26 +18,7 @@ async function serverRunner() {
   app.use(express.json()); // parse application/json
   app.use(express.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
 
-  // logger morgan
-  morgan.token("statusColor", (req, res) => {
-    const status = res.statusCode;
-    const color =
-      status >= 500
-        ? "\x1b[31m" // red
-        : status >= 400
-        ? "\x1b[33m" // yellow
-        : status >= 300
-        ? "\x1b[36m" // cyan
-        : status >= 200
-        ? "\x1b[32m" // green
-        : "\x1b[0m"; // reset
-    return `${color}${status}\x1b[0m`;
-  });
-
-  const format =
-    ":method :url :statusColor :res[content-length] - :response-time ms";
-
-  app.use(morgan(format));
+  app.use(morgan("dev"));
 
   app.use(
     helmet({

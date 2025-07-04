@@ -308,6 +308,7 @@ class XHandler {
             authorUsername: lastAuthorUsername,
             targetUsername: lastTargetUsername,
           })
+          .sort({ createdAt: -1 })
           .limit(limit)
           .toArray();
 

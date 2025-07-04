@@ -45,3 +45,14 @@ export interface IPayment {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface IPrompt {
+  _id?: ObjectId;
+  memberId: string | ObjectId;
+  context: string | ObjectId;
+  type: "PROMPT_CMT" | "PROMPT_POST";
+  status: "production" | "test";
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

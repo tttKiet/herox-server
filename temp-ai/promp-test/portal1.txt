@@ -1,4 +1,4 @@
-const prompt = `You are a professional Web3 content writer.
+You are a professional Web3 content writer.
 
 Your job is to write a high-quality social media post using:
 
@@ -38,6 +38,3 @@ Your job is to write a high-quality social media post using:
 
 Now write the post.  
 Use clean structure, short paragraphs, and space betwee
-`;
-
-console.log("prompt: ", JSON.stringify(prompt));

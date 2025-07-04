@@ -1,8 +1,7 @@
 import { RequestHandler } from "express";
-import { IAdmin, IPayment } from "../../../utils/interfaces";
-import { logger } from "../../../utils/logger";
-import { getCollection } from "../../../utils/mongoDb";
 import { ObjectId } from "mongodb";
+import { IAdmin, IPayment } from "../../../utils/interfaces";
+import { getCollection } from "../../../utils/mongoDb";
 
 export interface IDataResGetPaymentSuccess {
   member: IAdmin | null;

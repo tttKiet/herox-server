@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 
 export interface IPostImgReg {
-  postContent: string;
+  userMessage: string;
   isCreateImg: boolean;
   folderName: string;
   accountVerified: string;
@@ -9,7 +9,9 @@ export interface IPostImgReg {
 
 export interface IPost {
   _id?: ObjectId;
+  memberId: string | ObjectId;
   status: "pending" | "error" | "success";
+  message?: string;
   content: string;
   localPath?: string | null;
   imageUrl?: string | null;
@@ -50,7 +52,7 @@ export interface IPrompt {
   _id?: ObjectId;
   memberId: string | ObjectId;
   context: string | ObjectId;
-  type: "PROMPT_CMT" | "PROMPT_POST";
+  type: "PROMPT_CMT" | "PROMPT_POST" | "PROMPT_IMG";
   status: "production" | "test";
   description?: string;
   createdAt: Date;

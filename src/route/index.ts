@@ -3,11 +3,13 @@ import XHandler from "../app/handler/x";
 import AdminHandler from "../app/handler/admin";
 import ManagerHandler from "../app/handler/manager";
 import AiHandler from "../app/handler/ai";
+import AuthHandler from "../app/handler/auth/auth.index";
 
 const xHandler = new XHandler();
 const aiHandler = new AiHandler();
 const adminHandler = new AdminHandler();
 const managerHandler = new ManagerHandler();
+const authHandler = new AuthHandler();
 
 const mainRouter = Router();
 
@@ -65,5 +67,8 @@ mainRouter.delete(
   managerHandler.memberMdw,
   managerHandler.deletePrompt
 );
+
+// auth
+mainRouter.post("/api/v1/auth/login", authHandler.login);
 
 export default mainRouter;

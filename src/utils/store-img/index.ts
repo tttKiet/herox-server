@@ -49,6 +49,8 @@ export async function saveHostedImageToStore(
 ): Promise<string | null> {
   try {
     // 1) Fetch ảnh
+    if (!imageUrl) return null;
+
     const res = await fetch(imageUrl);
     if (!res.ok) {
       logger.error(`Failed to download image: ${res.status} ${res.statusText}`);

@@ -1,9 +1,12 @@
 import "dotenv/config";
 import { IPostImgReg } from "../utils/interfaces";
 import { logger } from "../utils/logger";
+import PromptService from "./PromptService";
 
 const API_N8N_HELPER_REUP_POST_IMG =
-  process.env.API_N8N_HELPER_REUP_POST_IMG_PRO;
+  process.env.API_N8N_HELPER_REUP_POST_IMG_TEST;
+
+const promptService = new PromptService();
 
 export interface IPostImgRegN8n extends IPostImgReg {
   imgRootBase64: string;
@@ -21,24 +24,41 @@ class N8nHelper {
   constructor() {}
 
   async startRepostImage({
-    postContent,
+    userMessage,
     imgRootBase64,
     isCreateImg,
     accountVerified,
     folderName,
   }: Partial<IPostImgRegN8n>) {
     try {
+      const promptPostPicked = await promptService.pickPrompt({
+        type: "PROMPT_POST",
+      });
+      let promptImg: any = "";
+
+      if (isCreateImg) {
+        const promptImgPicked = await promptService.pickPrompt({
+          type: "PROMPT_IMG",
+        });
+
+        promptImg = promptImgPicked.context;
+      }
+
       const resp = await fetch(API_N8N_HELPER_REUP_POST_IMG!, {
         method: "POST",
         headers: {
           "Content-Type": "Application/json",
         },
         body: JSON.stringify({
-          data: postContent?.split("||"),
+          userMessage: userMessage,
           folderName,
           imgRootBase64,
           isCreateImg,
           accountVerified,
+          prompt: {
+            post: promptPostPicked.context,
+            image: promptImg,
+          },
         }),
       });
 

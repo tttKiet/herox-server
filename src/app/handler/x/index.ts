@@ -17,6 +17,7 @@ import {
   saveHostedImageToStore,
 } from "../../../utils/store-img";
 import Payment from "../../../class/Payment";
+import PromptService from "src/class/PromptService";
 
 const payment = new Payment();
 
@@ -139,11 +140,11 @@ class XHandler {
     req,
     res
   ) {
-    const { postContent, folderName, isCreateImg, accountVerified, apiKey } =
+    const { userMessage, folderName, isCreateImg, accountVerified, apiKey } =
       req.body;
 
     if (
-      !postContent ||
+      !userMessage ||
       !folderName ||
       isCreateImg == undefined ||
       accountVerified == undefined
@@ -167,9 +168,9 @@ class XHandler {
 
     try {
       // Create Task and save in mongo db
-
       const post: IPost = {
         status: "pending",
+        memberId: apiKey,
         content: "",
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -188,7 +189,7 @@ class XHandler {
 
       createPostImg({
         insertedId,
-        postContent,
+        userMessage,
         isCreateImg,
         folderName,
         accountVerified,
@@ -342,7 +343,7 @@ interface ICreatePostImg extends IPostImgReg {
 }
 
 async function createPostImg({
-  postContent,
+  userMessage,
   insertedId,
   isCreateImg,
   folderName,
@@ -356,7 +357,7 @@ async function createPostImg({
 
   try {
     const renderResp = await n8nHelper.startRepostImage({
-      postContent,
+      userMessage,
       imgRootBase64,
       isCreateImg,
       folderName,
@@ -394,11 +395,16 @@ async function createPostImg({
     // logger.info(`Process ${insertedId} → done`);
   } catch (err: any) {
     console.log("err: ", err);
-
     // 4b) Nếu lỗi, cập nhật status = error
     await postsCol.updateOne(
       { _id: insertedId },
-      { $set: { status: "error", updatedAt: new Date() } }
+      {
+        $set: {
+          status: "error",
+          message: err?.message || "",
+          updatedAt: new Date(),
+        },
+      }
     );
 
     logger.error(`Post ${insertedId} → error: ${err.message}`);

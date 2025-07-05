@@ -60,7 +60,7 @@ class PromptService {
   async getPrompt(filter: {
     _id?: string;
     memberId?: string;
-    type?: "PROMPT_CMT" | "PROMPT_POST";
+    type?: "PROMPT_CMT" | "PROMPT_POST" | "PROMPT_IMG";
     status?: "production" | "test";
   }) {
     try {
@@ -117,7 +117,9 @@ class PromptService {
     }
   }
 
-  async pickPrompt(filter: { type: "PROMPT_CMT" | "PROMPT_POST" }) {
+  async pickPrompt(filter: {
+    type: "PROMPT_CMT" | "PROMPT_POST" | "PROMPT_IMG";
+  }) {
     try {
       const promptCol = getCollection<IPrompt>("prompts");
 

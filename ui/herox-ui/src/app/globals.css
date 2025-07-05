@@ -19,3 +19,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   box-sizing: initial;
 }
+
+.box-shadow-main {
+  box-shadow: 1px 1px 7px rgba(154, 154, 204, 0.1);
+}

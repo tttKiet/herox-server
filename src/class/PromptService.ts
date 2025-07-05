@@ -24,14 +24,9 @@ class PromptService {
           }
         }
 
-        const result = await promptCol.updateOne({ _id }, { $set: updateData });
+        await promptCol.updateOne({ _id }, { $set: updateData });
 
-        if (result.modifiedCount > 0) {
-          logger.success(`Prompt ${_id.toString()} updated successfully`);
-          return true;
-        } else {
-          throw new Error(`No prompt found with _id ${_id.toString()}`);
-        }
+        return true;
       }
 
       // CREATE
@@ -98,12 +93,10 @@ class PromptService {
 
   async deletePrompt(_id: string) {
     try {
-      const promptCol = getCollection<IPrompt>("prompts");
-
       if (!ObjectId.isValid(_id)) {
         throw new Error("Invalid prompt _id");
       }
-
+      const promptCol = getCollection<IPrompt>("prompts");
       const result = await promptCol.deleteOne({ _id: new ObjectId(_id) });
 
       if (result.deletedCount === 0) {

@@ -121,21 +121,25 @@ class ManagerHandler {
     res,
     next
   ) {
-    const { _id, memberId, type, status } = req.body;
+    // Lấy param từ req.query (luôn là string | string[] | undefined)
+    const { _id, memberId, type, status } = req.query;
 
     try {
       // Build filter
       const filter: {
         _id?: string;
         memberId?: string;
-        type?: "PROMPT_CMT" | "PROMPT_POST";
+        type?: "PROMPT_CMT" | "PROMPT_POST" | "PROMPT_IMG";
         status?: "production" | "test";
       } = {};
 
-      if (_id && ObjectId.isValid(_id)) filter._id = _id;
-      if (memberId && ObjectId.isValid(memberId)) filter.memberId = memberId;
-      if (type) filter.type = type;
-      if (status) filter.status = status;
+      if (typeof _id === "string" && ObjectId.isValid(_id)) filter._id = _id;
+      if (typeof memberId === "string" && ObjectId.isValid(memberId))
+        filter.memberId = memberId;
+      if (typeof type === "string")
+        filter.type = type as "PROMPT_CMT" | "PROMPT_POST" | "PROMPT_IMG";
+      if (typeof status === "string")
+        filter.status = status as "production" | "test";
 
       const result = await promptService.getPrompt(filter);
 

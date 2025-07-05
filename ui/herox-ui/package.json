@@ -9,9 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ant-design/nextjs-registry": "^1.0.2",
     "@heroui/react": "^2.8.0-beta.7",
     "@heroui/system": "^2.4.17-beta.0",
     "@heroui/theme": "^2.4.17-beta.0",
+    "@hookform/resolvers": "^5.1.1",
     "axios": "^1.9.0",
     "feather-icons": "^4.29.2",
     "framer-motion": "^12.17.0",
@@ -20,7 +22,10 @@
     "ogl": "^1.0.11",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-toastify": "^11.0.5"
+    "react-hook-form": "^7.60.0",
+    "react-icons": "^5.5.0",
+    "react-toastify": "^11.0.5",
+    "yup": "^1.6.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

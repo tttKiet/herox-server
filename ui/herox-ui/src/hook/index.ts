@@ -1,7 +1,8 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "../api/auth";
-import { notificationFetch } from "../utils";
 
 const NIMOR_KEY = "nimor_key";
 const NIMOR_DATA = "nimor_data";
@@ -43,7 +44,7 @@ export function getNimorData(): NimorData | null {
 }
 
 export function useAuthHook() {
-  const [user, setUser] = useState<NimorData | null>(getNimorData());
+  const [user, setUser] = useState<NimorData | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -52,29 +53,27 @@ export function useAuthHook() {
       router.replace("/login");
       return;
     }
-    authService
-      .login(key)
-      .then((res) => {
-        const result = res.data; // Lấy dữ liệu thực tế từ AxiosResponse
-        if (result.ok && result.data) {
-          setUser(result.data);
-          saveNimorData(result.data);
+    (async () => {
+      try {
+        const res = await authService.login(key);
+        const data = res.data;
+        if (data) {
+          setUser(data);
+          saveNimorData(data);
         } else {
-          notificationFetch({
-            promiseRunner: Promise.resolve(result),
-            toastSetting: { position: "top-center" },
-          });
           router.replace("/login");
         }
-      })
-      .catch((err) => {
-        notificationFetch({
-          promiseRunner: Promise.reject(err),
-          toastSetting: { position: "top-center" },
-        });
-        router.replace("/login");
-      });
-    // eslint-disable-next-line
+      } catch (err) {
+        console.log("Error fetching user data: ", err);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // Lấy user từ localStorage nếu đã có
+    const localUser = getNimorData();
+    if (localUser) setUser(localUser);
   }, []);
 
   return user;

@@ -56,11 +56,7 @@ mainRouter.post(
   managerHandler.createOrUpdatePrompt
 );
 
-mainRouter.get(
-  "/api/v1/prompt",
-  managerHandler.memberMdw,
-  managerHandler.getPrompt
-);
+mainRouter.get("/api/v1/prompt", managerHandler.getPrompt);
 
 mainRouter.delete(
   "/api/v1/prompt",

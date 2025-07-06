@@ -4,7 +4,7 @@ import { logger } from "../utils/logger";
 import PromptService from "./PromptService";
 
 const API_N8N_HELPER_REUP_POST_IMG =
-  process.env.API_N8N_HELPER_REUP_POST_IMG_TEST;
+  process.env.API_N8N_HELPER_REUP_POST_IMG_PRO;
 
 const promptService = new PromptService();
 

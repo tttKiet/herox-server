@@ -1,6 +1,4 @@
 import { RequestHandler } from "express";
-import { logger } from "../../../utils/logger";
-import { systemMessage as initSystemMessage } from "./message";
 import PromptService from "../../../class/PromptService";
 const promptService = new PromptService();
 

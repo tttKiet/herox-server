@@ -28,7 +28,7 @@ export default function HeaderCustom() {
       }}
     >
       <Image
-        src="/logo/Cầm cờ (1).png"
+        src="/logo/nimo_flat.png"
         alt="Logo"
         width={64}
         height={50}

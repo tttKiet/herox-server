@@ -1,14 +1,22 @@
-import { Button, Select, SelectItem, Textarea } from "@heroui/react";
+import {
+  Button,
+  Input,
+  Select,
+  SelectItem,
+  Switch,
+  Textarea,
+} from "@heroui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import * as yup from "yup";
 
 const schema = yup.object({
+  name: yup.string().required("Name is required"),
   context: yup.string().required("Context is required"),
   type: yup
     .string()
-    .oneOf(["PROMPT_POST", "PROMPT_COMMENT", "PROMPT_IMG"])
+    .oneOf(["PROMPT_POST", "PROMPT_CMT", "PROMPT_IMG"])
     .required("Type is required"),
   status: yup
     .string()
@@ -21,12 +29,8 @@ type FormValues = yup.InferType<typeof schema> & { _id?: string };
 
 const TYPE_OPTIONS = [
   { value: "PROMPT_POST", label: "Prompt Post" },
-  { value: "PROMPT_COMMENT", label: "Prompt Comment" },
+  { value: "PROMPT_CMT", label: "Prompt Comment" },
   { value: "PROMPT_IMG", label: "Prompt Image" },
-];
-const STATUS_OPTIONS = [
-  { value: "production", label: "Production" },
-  { value: "test", label: "Test" },
 ];
 
 interface FormAddPromptPostProps {
@@ -35,6 +39,7 @@ interface FormAddPromptPostProps {
   defaultValues: FormValues;
   isOpen: boolean;
   onRegisterGetValues?: (getValues: () => FormValues) => void;
+  onStatusChange?: (status: "production" | "test") => void;
 }
 
 const FormAddPromptPost: React.FC<FormAddPromptPostProps> = ({
@@ -50,6 +55,7 @@ const FormAddPromptPost: React.FC<FormAddPromptPostProps> = ({
     formState: { errors, isSubmitting },
     reset,
     getValues,
+    control,
   } = useForm<FormValues>({
     resolver: yupResolver(schema),
     defaultValues,
@@ -72,6 +78,8 @@ const FormAddPromptPost: React.FC<FormAddPromptPostProps> = ({
   }, [isOpen]);
 
   const handleFormSubmit = async (data: FormValues) => {
+    console.log("Submitting form with data: ", data);
+
     await onSubmit(data);
   };
 
@@ -85,17 +93,17 @@ const FormAddPromptPost: React.FC<FormAddPromptPostProps> = ({
       onSubmit={handleSubmit(handleFormSubmit)}
       className="flex flex-col gap-4"
     >
-      <Textarea
-        label="Context"
-        {...register("context")}
-        isInvalid={!!errors.context}
-        errorMessage={errors.context?.message}
-        minRows={12}
-        maxRows={16}
-        placeholder="Enter prompt context..."
+      <Input
+        type="text"
+        label="Prompt Name"
+        {...register("name")}
+        isInvalid={!!errors.type}
+        errorMessage={errors.type?.message}
+        placeholder="Prompt name..."
         isRequired
       />
       <div className="flex items-center gap-4">
+        {/* thêm name */}
         <Select
           label="Type"
           {...register("type")}
@@ -108,19 +116,34 @@ const FormAddPromptPost: React.FC<FormAddPromptPostProps> = ({
             <SelectItem key={opt.value}>{opt.label}</SelectItem>
           ))}
         </Select>
-        <Select
-          label="Status"
-          {...register("status")}
-          isInvalid={!!errors.status}
-          errorMessage={errors.status?.message}
-          defaultSelectedKeys={["production"]}
-          isRequired
-        >
-          {STATUS_OPTIONS.map((opt) => (
-            <SelectItem key={opt.value}>{opt.label}</SelectItem>
-          ))}
-        </Select>
+        <Controller
+          name="status"
+          control={control}
+          render={({ field }) => (
+            <Switch
+              isSelected={field.value === "production"}
+              onChange={(e) =>
+                field.onChange(e.target.checked ? "production" : "test")
+              }
+              aria-label="Active"
+              color="primary"
+              size="sm"
+            >
+              Active
+            </Switch>
+          )}
+        />
       </div>
+      <Textarea
+        label="Context"
+        {...register("context")}
+        isInvalid={!!errors.context}
+        errorMessage={errors.context?.message}
+        minRows={12}
+        maxRows={16}
+        placeholder="Enter prompt context..."
+        isRequired
+      />
       <Textarea
         label="Description"
         {...register("description")}

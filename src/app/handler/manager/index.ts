@@ -66,7 +66,7 @@ class ManagerHandler {
     res,
     next
   ) {
-    const { apiKey, _id, context, type, status, description } = req.body;
+    const { apiKey, _id, context, type, status, description, name } = req.body;
 
     if (!apiKey) {
       res.status(400).json({ ok: false, message: "Missing apiKey!" });
@@ -83,7 +83,7 @@ class ManagerHandler {
           return;
         }
       } else {
-        if (!context || !type || !status) {
+        if (!context || !type || !status || !name) {
           res.status(400).json({
             ok: false,
             message: "Missing required fields for creation!",
@@ -95,6 +95,7 @@ class ManagerHandler {
       // Gọi class Prompt
       const result = await promptService.createOrUpdatePrompt({
         _id: _id ? new ObjectId(_id) : undefined,
+        name,
         memberId,
         context,
         type,
@@ -141,12 +142,31 @@ class ManagerHandler {
       if (typeof status === "string")
         filter.status = status as "production" | "test";
 
-      const result = await promptService.getPrompt(filter);
+      const promptDocs = await promptService.getPrompt(filter);
+
+      // Lấy thông tin member cho từng prompt
+      const adminCol = getCollection<IAdmin>("admins");
+      const memberIds = Array.from(
+        new Set(promptDocs.map((p: any) => p.memberId).filter(Boolean))
+      );
+      const adminDocsArr = await adminCol
+        .find({
+          _id: { $in: memberIds.map((id) => new ObjectId(id)) },
+        })
+        .toArray();
+      const adminMap = Object.fromEntries(
+        adminDocsArr.map((a) => [a._id.toString(), a])
+      );
+
+      const promptWithMember = promptDocs.map((p: any) => ({
+        ...p,
+        member: adminMap[p.memberId] || null,
+      }));
 
       res.status(200).json({
         ok: true,
         message: "Fetched prompts successfully!",
-        data: result,
+        data: promptWithMember,
       });
     } catch (error: any) {
       console.error("Error:", error?.message);

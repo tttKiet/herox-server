@@ -8,6 +8,7 @@ export interface IFilterPrompt {
 }
 
 type PromptBody = {
+  name: string;
   apiKey: string;
   context: string;
   type: string;
@@ -40,6 +41,7 @@ class PromptService {
     type,
     status,
     description,
+    name,
   }: PromptBody) {
     const body: PromptBody = {
       apiKey,
@@ -47,6 +49,7 @@ class PromptService {
       type,
       status,
       description,
+      name,
     };
     if (_id) body._id = _id;
     const res = await axios.post(PROMPT_API, body);

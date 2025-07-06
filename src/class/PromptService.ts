@@ -43,10 +43,7 @@ class PromptService {
       } as IPrompt;
 
       const insertResult = await promptCol.insertOne(newPrompt);
-      logger.success(
-        `Prompt created with _id ${insertResult.insertedId.toString()}`
-      );
-      return true;
+      return insertResult;
     } catch (error: any) {
       throw new Error(error?.message || `Error to create | update prompt: `);
     }

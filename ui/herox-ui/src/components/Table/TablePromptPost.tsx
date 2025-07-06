@@ -2,12 +2,15 @@
 
 import { promptService } from "@/api/prompt";
 import { getNimorKey } from "@/hook";
-import { CheckIcon, DeleteIcon, EditIcon, EyeIcon } from "@/utils/icons";
+import { DeleteIcon, EditIcon } from "@/utils/icons";
 import { TiPlus } from "react-icons/ti";
 
+import { notificationFetch } from "@/utils";
+import { IPrompt } from "@/utils/interfaces";
 import {
   Button,
   Chip,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -18,39 +21,29 @@ import {
   useDisclosure,
 } from "@heroui/react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import FormAddPromptPost from "../Form/FormAddPromptPost";
 import ModalCustom from "../Modal/Modal";
 import ModalConfirm from "../Modal/ModalConfirm";
-import FormAddPromptPost from "../Form/FormAddPromptPost";
-import { notificationFetch } from "@/utils";
-
-export interface IPrompt {
-  _id: string;
-  memberId: string;
-  context: string;
-  type: string;
-  status: string;
-  description?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
 
 const columns = [
-  { name: "ID", uid: "_id" },
+  { name: "Mention", uid: "mention" },
+  { name: "Name", uid: "name" },
   { name: "Context", uid: "context" },
   { name: "Type", uid: "type" },
-  { name: "Status", uid: "status" },
+  { name: "Active", uid: "status" },
   { name: "Actions", uid: "actions" },
 ];
 
 const PROMPT_OPTION = {
-  PROMPT_POST: "Prompt Post",
-  PROMPT_COMMENT: "Prompt Comment",
-  PROMPT_IMG: "Prompt Image",
+  PROMPT_POST: "post",
+  PROMPT_CMT: "comment",
+  PROMPT_IMG: "image",
 };
 
 type FormPrompt = {
+  name: string;
   context: string;
-  type: "PROMPT_POST" | "PROMPT_COMMENT" | "PROMPT_IMG";
+  type: "PROMPT_POST" | "PROMPT_CMT" | "PROMPT_IMG";
   status: "production" | "test";
   description: string;
   _id?: string;
@@ -68,17 +61,18 @@ export default function TablePromptPost() {
     context: "",
     type: "PROMPT_POST",
     status: "production",
+    name: "",
     description: "",
   });
-  console.log("formValues table: ", formValues);
 
   // Ref để lưu hàm getValues từ form con
   const getDraftRef = useRef<(() => FormPrompt) | null>(null);
 
   // Khi mở modal, giữ nguyên formValues, khi submit thành công thì reset
   async function handleFormSubmit(data: {
+    name: string;
     context: string;
-    type: "PROMPT_POST" | "PROMPT_COMMENT" | "PROMPT_IMG";
+    type: "PROMPT_POST" | "PROMPT_CMT" | "PROMPT_IMG";
     status: "production" | "test";
     description: string;
   }) {
@@ -86,6 +80,7 @@ export default function TablePromptPost() {
     if (!apiKey) return;
     await notificationFetch({
       promiseRunner: promptService.createOrUpdatePrompt({
+        name: data.name,
         apiKey,
         context: data.context,
         type: data.type,
@@ -100,6 +95,7 @@ export default function TablePromptPost() {
       type: "PROMPT_POST",
       status: "production",
       description: "",
+      name: "",
     }); // reset form
     onClose();
   }
@@ -113,6 +109,7 @@ export default function TablePromptPost() {
           type: "PROMPT_POST",
           status: "production",
           description: "",
+          name: "",
         });
       } else if (draft) {
         setFormValues(draft);
@@ -129,6 +126,7 @@ export default function TablePromptPost() {
         context: "",
         type: "PROMPT_POST",
         status: "production",
+        name: "",
         description: "",
       });
       onClose();
@@ -169,6 +167,7 @@ export default function TablePromptPost() {
         type: prompt.type as FormPrompt["type"],
         status: prompt.status as FormPrompt["status"],
         description: prompt.description || "",
+        name: prompt.name,
         _id: prompt._id,
       }); // _id sẽ được truyền vào API update
       onOpen();
@@ -213,9 +212,20 @@ export default function TablePromptPost() {
 
   const renderCell = (item: IPrompt, columnKey: string) => {
     switch (columnKey) {
+      case "name":
+        return (
+          <div className="line-clamp-3 max-w-xs text-xs">{item?.name}</div>
+        );
       case "context":
         return (
           <div className="line-clamp-3 max-w-xs text-xs">{item.context}</div>
+        );
+
+      case "mention":
+        return (
+          <div className="line-clamp-3 max-w-xs text-xs font-medium">
+            {item.member?.fullName}
+          </div>
         );
       case "type":
         const type = item.type;
@@ -229,44 +239,42 @@ export default function TablePromptPost() {
           | undefined;
         if (type == "PROMPT_POST") {
           color = "primary";
-        } else if (type == "PROMPT_COMMENT") {
+        } else if (type == "PROMPT_CMT") {
           color = "secondary";
         } else if (type == "PROMPT_IMG") {
           color = "warning";
         }
 
         return (
-          <Chip color={color} variant="light" className="font-bold text-sm">
+          <Chip color={color} variant="flat" size="sm" className="font-bold">
             {PROMPT_OPTION[type as keyof typeof PROMPT_OPTION] || type}
           </Chip>
         );
       case "status":
-        if (item.status === "production") {
-          return (
-            <Chip
-              color="success"
-              startContent={<CheckIcon size={18} />}
-              variant="faded"
-            >
-              {item.status}
-            </Chip>
-          );
-        } else {
-          return (
-            <Chip color="secondary" variant="flat">
-              {item.status}
-            </Chip>
-          );
-        }
+        const isProduction = item.status == "production";
+        return (
+          <Switch
+            isSelected={isProduction}
+            onChange={async () => {
+              const apiKey = getNimorKey();
+              if (!apiKey) return;
+              await notificationFetch({
+                promiseRunner: promptService.createOrUpdatePrompt({
+                  ...item,
+                  apiKey,
+                  status: isProduction ? "test" : "production",
+                }),
+              });
+              await fetchPrompts();
+            }}
+            color="primary"
+            size="sm"
+          ></Switch>
+        );
 
       case "actions":
         return (
           <div className="relative flex items-center gap-2">
-            <Tooltip content="Details">
-              <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
-                <EyeIcon />
-              </span>
-            </Tooltip>
             <Tooltip content="Edit">
               <span
                 className="text-lg text-default-400 cursor-pointer active:opacity-50"
@@ -314,7 +322,7 @@ export default function TablePromptPost() {
       <ModalCustom
         isOpen={isOpen}
         onClose={handleModalClose}
-        title="Add New IPrompt"
+        title="Add New Prompt"
         size="2xl"
       >
         <FormAddPromptPost
@@ -331,6 +339,7 @@ export default function TablePromptPost() {
         <div></div>
         <Button
           color="primary"
+          size="sm"
           onPress={handleAddPrompt}
           startContent={<TiPlus />}
         >

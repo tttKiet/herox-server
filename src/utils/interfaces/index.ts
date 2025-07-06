@@ -50,6 +50,7 @@ export interface IPayment {
 
 export interface IPrompt {
   _id?: ObjectId;
+  name: string;
   memberId: string | ObjectId;
   context: string | ObjectId;
   type: "PROMPT_CMT" | "PROMPT_POST" | "PROMPT_IMG";

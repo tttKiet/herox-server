@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { HiHome, HiOutlineNewspaper, HiOutlinePhoto } from "react-icons/hi2";
+import { HiHome, HiOutlineNewspaper } from "react-icons/hi2";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import type { MenuProps } from "antd";
 import { Layout, Menu, theme } from "antd";
@@ -18,17 +19,12 @@ const navBarLeft: MenuProps["items"] = [
   },
   {
     type: "group",
-    label: <div className="text-xs font-bold">Prompt</div>,
+    label: <div className="text-xs font-bold">MENU</div>,
     children: [
       {
-        label: <Link href="/prompt/post">Post</Link>,
+        label: <Link href="/prompt">Prompt</Link>,
         icon: <HiOutlineNewspaper />,
-        key: "POST",
-      },
-      {
-        label: <Link href="/prompt/image">Image</Link>,
-        icon: <HiOutlinePhoto />,
-        key: "IMAGE",
+        key: "PROMPT",
       },
     ],
   },
@@ -38,6 +34,14 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const {
     token: { colorBgContainer },
   } = theme.useToken();
+  const pathname = usePathname();
+
+  // Map pathname to menu key
+  const getSelectedKey = () => {
+    if (pathname === "/") return ["DASH_BOARD"];
+    if (pathname.startsWith("/prompt")) return ["PROMPT"];
+    return [];
+  };
 
   return (
     <div>
@@ -62,8 +66,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                 <Menu
                   className="rounded-md"
                   mode="inline"
-                  defaultSelectedKeys={["1"]}
-                  defaultOpenKeys={["sub1"]}
+                  selectedKeys={getSelectedKey()}
                   items={navBarLeft}
                 />
               </Sider>

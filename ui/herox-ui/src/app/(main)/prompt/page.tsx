@@ -3,7 +3,7 @@ import TablePromptPost from "@/components/Table/TablePromptPost";
 
 export default function PromptPostPage() {
   return (
-    <div>
+    <div className="-mr-6">
       <BoxCustom>
         {/* title */}
         <div>

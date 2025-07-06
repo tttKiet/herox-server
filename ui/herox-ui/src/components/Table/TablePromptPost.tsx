@@ -7,6 +7,7 @@ import { TiPlus } from "react-icons/ti";
 
 import { notificationFetch } from "@/utils";
 import { IPrompt } from "@/utils/interfaces";
+import type { IFilterPrompt } from "@/api/prompt";
 import {
   Button,
   Chip,
@@ -19,6 +20,8 @@ import {
   TableRow,
   Tooltip,
   useDisclosure,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import FormAddPromptPost from "../Form/FormAddPromptPost";
@@ -67,6 +70,10 @@ export default function TablePromptPost() {
 
   // Ref để lưu hàm getValues từ form con
   const getDraftRef = useRef<(() => FormPrompt) | null>(null);
+
+  // Filter state
+  const [filterType, setFilterType] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("");
 
   // Khi mở modal, giữ nguyên formValues, khi submit thành công thì reset
   async function handleFormSubmit(data: {
@@ -143,7 +150,13 @@ export default function TablePromptPost() {
     try {
       const apiKey = getNimorKey();
       if (!apiKey) return;
-      const res = await promptService.getPrompt({ apiKey });
+      const filter: Partial<IFilterPrompt> = {};
+      if (filterType) filter.type = filterType;
+      if (filterStatus) filter.status = filterStatus;
+      const res = await promptService.getPrompt({
+        apiKey,
+        filter: Object.keys(filter).length ? filter : undefined,
+      });
       if (res && res.ok && Array.isArray(res.data)) {
         setPrompts(res.data);
       }
@@ -152,7 +165,7 @@ export default function TablePromptPost() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filterType, filterStatus]);
 
   useEffect(() => {
     fetchPrompts();
@@ -336,9 +349,44 @@ export default function TablePromptPost() {
         />
       </ModalCustom>
       <div className="flex items-center justify-between mb-6">
-        <div></div>
+        <div className="flex gap-3 items-center">
+          <Select
+            label="Type"
+            size="sm"
+            color="default"
+            labelPlacement="outside"
+            className="min-w-44 no-mt-select"
+            selectedKeys={filterType ? [filterType] : []}
+            onSelectionChange={(keys) => {
+              const val = Array.from(keys)[0] as string;
+              setFilterType(val || "");
+            }}
+          >
+            <SelectItem key="">All Types</SelectItem>
+            <SelectItem key="PROMPT_POST">Prompt Post</SelectItem>
+            <SelectItem key="PROMPT_CMT">Prompt Comment</SelectItem>
+            <SelectItem key="PROMPT_IMG">Prompt Image</SelectItem>
+          </Select>
+          <Select
+            label="Active Status"
+            color="default"
+            labelPlacement="outside"
+            size="sm"
+            className="min-w-44 no-mt-select"
+            selectedKeys={filterStatus ? [filterStatus] : []}
+            onSelectionChange={(keys) => {
+              const val = Array.from(keys)[0] as string;
+              setFilterStatus(val || "");
+            }}
+          >
+            <SelectItem key="">All Status</SelectItem>
+            <SelectItem key="production">Production</SelectItem>
+            <SelectItem key="test">Test</SelectItem>
+          </Select>
+        </div>
         <Button
           color="primary"
+          className="mt-5"
           size="sm"
           onPress={handleAddPrompt}
           startContent={<TiPlus />}

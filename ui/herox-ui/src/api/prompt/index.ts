@@ -2,9 +2,9 @@ import axios from "axios";
 import { PROMPT_API } from "../endpoints";
 
 export interface IFilterPrompt {
-  _id: string;
-  type: string;
-  status: string;
+  _id?: string;
+  type?: string;
+  status?: string;
 }
 
 type PromptBody = {

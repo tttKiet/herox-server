@@ -30,8 +30,6 @@ class XHandler {
   ) {
     const { username } = req.params;
 
-    logger.info("Drawer " + username);
-
     const gpmHandler = new GpmHandler();
     const respStartProfile = await gpmHandler.startProfile(
       "cdc5d866-f4f2-4ec2-b9de-e20b670f0caf"
@@ -231,7 +229,6 @@ class XHandler {
       const { postId, action, authorUsername, targetUsername } = req.body;
 
       if (!postId || !authorUsername || !targetUsername) {
-        logger.error("Missing input!");
         res.status(400).json({ ok: false, message: "Missing input!" });
         return;
       }
@@ -351,7 +348,6 @@ async function createPostImg({
 }: ICreatePostImg) {
   const n8nHelper = new N8nHelper();
   const postsCol = getCollection<IPost>("posts");
-  // logger.info("Folder Name: ", folderName);
 
   const imgRootBase64 = await getRandomImageBase64(folderName);
 
@@ -379,9 +375,6 @@ async function createPostImg({
         imageUrl: renderResp.data.imageUrl,
         updatedAt: new Date(),
       };
-
-      // logger.success(`Save post to pc → success`);
-      // logger.success(`Post ${insertedId} → success`);
     } else {
       updateFields = {
         status: "error",

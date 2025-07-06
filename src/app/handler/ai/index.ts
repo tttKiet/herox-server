@@ -1,6 +1,8 @@
 import { RequestHandler } from "express";
 import { logger } from "../../../utils/logger";
 import { systemMessage as initSystemMessage } from "./message";
+import PromptService from "../../../class/PromptService";
+const promptService = new PromptService();
 
 export interface IBodyChatRespDeepseek {
   messages: [
@@ -25,7 +27,6 @@ async function fetchAI(apiKey: string, body: IBodyChatRespDeepseek) {
 
     if (res.ok) {
       const chatResp = resp?.choices[0]?.message?.content;
-      console.log({ resp: res.status, chatResp });
       return chatResp;
     } else {
       console.log("Error: ", resp.error);
@@ -45,17 +46,21 @@ class AiHandler {
       const { apiKey, userMessage, systemMessage } = req.body;
 
       if (!apiKey || !userMessage) {
-        logger.error("Missing input!");
         res.status(400).json({ ok: false, message: "Missing input!" });
         return;
       }
 
       try {
+        const promptCmtPicked = await promptService.pickPrompt({
+          type: "PROMPT_CMT",
+        });
+
+        const promptCmt = promptCmtPicked.context;
         const respAi = await fetchAI(apiKey, {
           messages: [
             {
               role: "system",
-              content: initSystemMessage + "\n" + systemMessage,
+              content: promptCmt + "\n" + systemMessage,
             },
             { role: "user", content: userMessage },
           ],

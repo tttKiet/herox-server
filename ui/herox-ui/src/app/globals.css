@@ -23,3 +23,13 @@ body {
 .box-shadow-main {
   box-shadow: 1px 1px 7px rgba(154, 154, 204, 0.1);
 }
+
+/* ant custom */
+.ant-menu-item-selected {
+  font-weight: bold !important;
+}
+
+/* hero ui custom */
+.no-mt-select [data-slot="base"] {
+  margin-top: 0 !important;
+}

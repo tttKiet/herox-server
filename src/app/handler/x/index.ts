@@ -374,7 +374,17 @@ class XHandler {
   // Hàm 2: Kiểm tra mảng tên, trả về tên chưa dùng hoặc báo lỗi nếu đã dùng hết
   public getAvailableImageName: RequestHandler = async function (req, res) {
     const { apiKey: memberId, nameImages } = req.body;
-    if (!memberId || !Array.isArray(nameImages) || nameImages.length === 0) {
+    // Hỗ trợ truyền vào là mảng hoặc string cách nhau bằng |
+    let nameList: string[] = [];
+    if (Array.isArray(nameImages)) {
+      nameList = nameImages;
+    } else if (typeof nameImages === "string") {
+      nameList = nameImages
+        .split("|")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    if (!memberId || nameList.length === 0) {
       res
         .status(400)
         .json({ ok: false, message: "Missing memberId or nameImages" });
@@ -390,7 +400,7 @@ class XHandler {
       const usedDocs = await imageNamesCol.find({ memberId }).toArray();
       const usedNames = usedDocs.map((doc) => doc.nameImage);
       // Tìm tên chưa dùng (random)
-      const unusedNames = nameImages.filter(
+      const unusedNames = nameList.filter(
         (name: string) => !usedNames.includes(name)
       );
       let availableName: string | undefined = undefined;

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { IPayment, IPostImgReg, IPrompt } from "../utils/interfaces";
+import { IAdmin, IPayment, IPostImgReg, IPrompt } from "../utils/interfaces";
 import { logger } from "../utils/logger";
 import { ObjectId } from "mongodb";
 import { getCollection } from "../utils/mongoDb";
@@ -113,7 +113,7 @@ class PromptService {
   }) {
     try {
       const promptCol = getCollection<IPrompt>("prompts");
-      const adminCol = getCollection<IPrompt>("admins");
+      const adminCol = getCollection<IAdmin>("admins");
       // Lấy list prompt của memberId truyền vào
       let list = await promptCol
         .find({
@@ -126,7 +126,7 @@ class PromptService {
       // Nếu không có prompt nào, lấy _id của admin root (fullName: "Hero")
       if (!list.length) {
         const adminDoc = await adminCol.findOne({ fullName: "Hero" });
-        if (!adminDoc || !adminDoc.memberId) {
+        if (!adminDoc) {
           throw new Error(
             "No admin prompt found: missing admin with fullName 'Hero'"
           );
@@ -135,7 +135,7 @@ class PromptService {
           .find({
             type: filter.type,
             status: "production",
-            memberId: adminDoc.memberId,
+            memberId: adminDoc._id.toString(),
           })
           .toArray();
       }

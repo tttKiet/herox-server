@@ -41,7 +41,7 @@ class AiHandler {
 
   public chatResp: RequestHandler<Partial<IBodyChatRespDeepseek>> =
     async function (req, res) {
-      const { apiKey, userMessage, systemMessage } = req.body;
+      const { apiKey, userMessage, systemMessage, chatKey } = req.body;
 
       if (!apiKey || !userMessage) {
         res.status(400).json({ ok: false, message: "Missing input!" });
@@ -55,7 +55,7 @@ class AiHandler {
         });
 
         const promptCmt = promptCmtPicked.context;
-        const respAi = await fetchAI(apiKey, {
+        const respAi = await fetchAI(chatKey, {
           messages: [
             {
               role: "system",

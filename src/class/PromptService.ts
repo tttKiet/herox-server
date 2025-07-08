@@ -113,6 +113,7 @@ class PromptService {
   }) {
     try {
       const promptCol = getCollection<IPrompt>("prompts");
+      const adminCol = getCollection<IPrompt>("admins");
       // Lấy list prompt của memberId truyền vào
       let list = await promptCol
         .find({
@@ -124,7 +125,7 @@ class PromptService {
 
       // Nếu không có prompt nào, lấy _id của admin root (fullName: "Hero")
       if (!list.length) {
-        const adminDoc = await promptCol.findOne({ fullName: "Hero" });
+        const adminDoc = await adminCol.findOne({ fullName: "Hero" });
         if (!adminDoc || !adminDoc.memberId) {
           throw new Error(
             "No admin prompt found: missing admin with fullName 'Hero'"

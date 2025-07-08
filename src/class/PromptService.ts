@@ -122,13 +122,19 @@ class PromptService {
         })
         .toArray();
 
-      // Nếu không có prompt nào, lấy list của Hero (admin root)
+      // Nếu không có prompt nào, lấy _id của admin root (fullName: "Hero")
       if (!list.length) {
+        const adminDoc = await promptCol.findOne({ fullName: "Hero" });
+        if (!adminDoc || !adminDoc.memberId) {
+          throw new Error(
+            "No admin prompt found: missing admin with fullName 'Hero'"
+          );
+        }
         list = await promptCol
           .find({
             type: filter.type,
             status: "production",
-            fullName: "Hero",
+            memberId: adminDoc.memberId,
           })
           .toArray();
       }

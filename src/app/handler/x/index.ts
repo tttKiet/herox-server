@@ -185,14 +185,17 @@ class XHandler {
         },
       });
 
-      createPostImg({
-        insertedId,
-        userMessage,
-        isCreateImg,
-        folderName,
-        accountVerified,
-      });
-      payment.useCreateImg({ memberId: apiKey, postId: insertedId.toString() });
+      createPostImg(
+        {
+          insertedId,
+          userMessage,
+          isCreateImg,
+          folderName,
+          accountVerified,
+        },
+        apiKey
+      );
+      // payment.useCreateImg({ memberId: apiKey, postId: insertedId.toString() });
       return;
     } catch (err: any) {
       console.error("Error:", err.message);
@@ -442,26 +445,32 @@ interface ICreatePostImg extends IPostImgReg {
   insertedId: ObjectId;
 }
 
-async function createPostImg({
-  userMessage,
-  insertedId,
-  isCreateImg,
-  folderName,
-  accountVerified,
-}: ICreatePostImg) {
+async function createPostImg(
+  {
+    userMessage,
+    insertedId,
+    isCreateImg,
+    folderName,
+    accountVerified,
+  }: ICreatePostImg,
+  apikey: string
+) {
   const n8nHelper = new N8nHelper();
   const postsCol = getCollection<IPost>("posts");
 
   const imgRootBase64 = await getRandomImageBase64(folderName);
 
   try {
-    const renderResp = await n8nHelper.startRepostImage({
-      userMessage,
-      imgRootBase64,
-      isCreateImg,
-      folderName,
-      accountVerified,
-    });
+    const renderResp = await n8nHelper.startRepostImage(
+      {
+        userMessage,
+        imgRootBase64,
+        isCreateImg,
+        folderName,
+        accountVerified,
+      },
+      apikey
+    );
 
     let updateFields: Partial<IPost>;
 

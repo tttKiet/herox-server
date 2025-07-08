@@ -97,7 +97,7 @@ class ManagerHandler {
       const result = await promptService.createOrUpdatePrompt({
         _id: _id ? new ObjectId(_id) : undefined,
         name,
-        memberId,
+        memberId: _id ? undefined : memberId,
         context,
         type,
         status,
@@ -205,7 +205,7 @@ class ManagerHandler {
     res,
     next
   ) {
-    const { type } = req.body;
+    const { type, apiKey } = req.body;
 
     if (!type) {
       res.status(400).json({ ok: false, message: "Missing prompt type!" });
@@ -216,7 +216,7 @@ class ManagerHandler {
     }
 
     try {
-      const result = await promptService.pickPrompt({ type });
+      const result = await promptService.pickPrompt({ type, memberId: apiKey });
 
       res.status(200).json({
         ok: true,

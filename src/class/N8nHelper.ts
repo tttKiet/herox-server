@@ -23,26 +23,31 @@ export interface IResN8nPostImage {
 class N8nHelper {
   constructor() {}
 
-  async startRepostImage({
-    userMessage,
-    imgRootBase64,
-    isCreateImg,
-    accountVerified,
-    folderName,
-  }: Partial<IPostImgRegN8n>) {
+  async startRepostImage(
+    {
+      userMessage,
+      imgRootBase64,
+      isCreateImg,
+      accountVerified,
+      folderName,
+    }: Partial<IPostImgRegN8n>,
+    apiKey: string
+  ) {
     try {
       const promptPostPicked = await promptService.pickPrompt({
         type: "PROMPT_POST",
+        memberId: apiKey,
       });
-      let promptImg: any = "";
+      // let promptImg: any = "";
 
-      if (isCreateImg) {
-        const promptImgPicked = await promptService.pickPrompt({
-          type: "PROMPT_IMG",
-        });
+      // if (isCreateImg) {
+      //   const promptImgPicked = await promptService.pickPrompt({
+      //     type: "PROMPT_IMG",
+      //     memberId: apiKey,
+      //   });
 
-        promptImg = promptImgPicked.context;
-      }
+      //   promptImg = promptImgPicked.context;
+      // }
 
       const resp = await fetch(API_N8N_HELPER_REUP_POST_IMG!, {
         method: "POST",
@@ -57,7 +62,7 @@ class N8nHelper {
           accountVerified,
           prompt: {
             post: promptPostPicked.context,
-            image: promptImg,
+            image: "",
           },
         }),
       });

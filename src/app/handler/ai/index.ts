@@ -51,6 +51,7 @@ class AiHandler {
       try {
         const promptCmtPicked = await promptService.pickPrompt({
           type: "PROMPT_CMT",
+          memberId: apiKey,
         });
 
         const promptCmt = promptCmtPicked.context;

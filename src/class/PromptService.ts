@@ -109,13 +109,29 @@ class PromptService {
 
   async pickPrompt(filter: {
     type: "PROMPT_CMT" | "PROMPT_POST" | "PROMPT_IMG";
+    memberId: string;
   }) {
     try {
       const promptCol = getCollection<IPrompt>("prompts");
-
-      const list = await promptCol
-        .find({ type: filter.type, status: "production" })
+      // Lấy list prompt của memberId truyền vào
+      let list = await promptCol
+        .find({
+          type: filter.type,
+          status: "production",
+          memberId: filter.memberId,
+        })
         .toArray();
+
+      // Nếu không có prompt nào, lấy list của Hero (admin root)
+      if (!list.length) {
+        list = await promptCol
+          .find({
+            type: filter.type,
+            status: "production",
+            fullName: "Hero",
+          })
+          .toArray();
+      }
 
       if (!list.length) {
         throw new Error("No prompt found with the specified type and status");

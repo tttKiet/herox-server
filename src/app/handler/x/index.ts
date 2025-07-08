@@ -339,7 +339,17 @@ class XHandler {
   // Hàm 1: Lưu tên ảnh vào DB với memberId, nameImage (không cho trùng)
   public saveImageName: RequestHandler = async function (req, res) {
     const { apiKey: memberId, nameImage } = req.body;
-    if (!memberId || !nameImage) {
+    // Hỗ trợ truyền vào là 1 tên hoặc chuỗi nhiều tên cách nhau bởi |
+    let nameList: string[] = [];
+    if (Array.isArray(nameImage)) {
+      nameList = nameImage;
+    } else if (typeof nameImage === "string") {
+      nameList = nameImage
+        .split("|")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    if (!memberId || nameList.length === 0) {
       res
         .status(400)
         .json({ ok: false, message: "Missing memberId or nameImage" });
@@ -351,21 +361,25 @@ class XHandler {
         nameImage: string;
         createdAt: Date;
       }>("imageNames");
-      // Kiểm tra trùng
-      const existed = await imageNamesCol.findOne({ memberId, nameImage });
-      if (existed) {
-        res.status(200).json({
-          ok: false,
-          message: "This nameImage has already been used for this memberId.",
+      const inserted: string[] = [];
+      const duplicated: string[] = [];
+      for (const name of nameList) {
+        const existed = await imageNamesCol.findOne({
+          memberId,
+          nameImage: name,
         });
-        return;
+        if (existed) {
+          duplicated.push(name);
+          continue;
+        }
+        await imageNamesCol.insertOne({
+          memberId,
+          nameImage: name,
+          createdAt: new Date(),
+        });
+        inserted.push(name);
       }
-      const docs = await imageNamesCol.insertOne({
-        memberId,
-        nameImage,
-        createdAt: new Date(),
-      });
-      res.status(200).json({ ok: true, data: docs });
+      res.status(200).json({ ok: true, data: { inserted, duplicated } });
     } catch (err: any) {
       res.status(500).json({ ok: false, message: err?.message });
     }

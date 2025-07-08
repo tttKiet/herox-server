@@ -67,4 +67,17 @@ mainRouter.delete(
 // auth
 mainRouter.post("/api/v1/auth/login", authHandler.login);
 
+// save img
+mainRouter.post(
+  "/api/v1/img/save-name",
+  managerHandler.memberMdw,
+  xHandler.saveImageName
+);
+
+mainRouter.post(
+  "/api/v1/img/get-available-name-random",
+  managerHandler.memberMdw,
+  xHandler.getAvailableImageName
+);
+
 export default mainRouter;

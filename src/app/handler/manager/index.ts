@@ -38,9 +38,10 @@ class ManagerHandler {
     res,
     next
   ) {
-    const { apiKey } = req.body;
+    const apiKey = req.body?.apiKey;
+
     if (!apiKey) {
-      res.status(400).json({ ok: false, message: "Missing input parameter!" });
+      res.status(400).json({ ok: false, message: "Missing apiKey!" });
       return;
     }
 

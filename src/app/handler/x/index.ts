@@ -234,7 +234,9 @@ class XHandler {
       }
       // convert input
       const urlArray = postId.split("/");
-      const lastPostId = urlArray[urlArray.length - 1];
+      const postIdString = urlArray[urlArray.length - 1];
+
+      const lastPostId = postIdString.split("?")[0];
       // logger.info("Save post id: ", lastPostId);
 
       const lastAuthorUsername = authorUsername.toLowerCase().trim();
@@ -333,6 +335,83 @@ class XHandler {
         return;
       }
     };
+
+  // Hàm 1: Lưu tên ảnh vào DB với memberId, nameImage (không cho trùng)
+  public saveImageName: RequestHandler = async function (req, res) {
+    const { apiKey: memberId, nameImage } = req.body;
+    if (!memberId || !nameImage) {
+      res
+        .status(400)
+        .json({ ok: false, message: "Missing memberId or nameImage" });
+      return;
+    }
+    try {
+      const imageNamesCol = getCollection<{
+        memberId: string;
+        nameImage: string;
+        createdAt: Date;
+      }>("imageNames");
+      // Kiểm tra trùng
+      const existed = await imageNamesCol.findOne({ memberId, nameImage });
+      if (existed) {
+        res.status(200).json({
+          ok: false,
+          message: "This nameImage has already been used for this memberId.",
+        });
+        return;
+      }
+      const docs = await imageNamesCol.insertOne({
+        memberId,
+        nameImage,
+        createdAt: new Date(),
+      });
+      res.status(200).json({ ok: true, data: docs });
+    } catch (err: any) {
+      res.status(500).json({ ok: false, message: err?.message });
+    }
+  };
+
+  // Hàm 2: Kiểm tra mảng tên, trả về tên chưa dùng hoặc báo lỗi nếu đã dùng hết
+  public getAvailableImageName: RequestHandler = async function (req, res) {
+    const { apiKey: memberId, nameImages } = req.body;
+    if (!memberId || !Array.isArray(nameImages) || nameImages.length === 0) {
+      res
+        .status(400)
+        .json({ ok: false, message: "Missing memberId or nameImages" });
+      return;
+    }
+    try {
+      const imageNamesCol = getCollection<{
+        memberId: string;
+        nameImage: string;
+        createdAt: Date;
+      }>("imageNames");
+      // Lấy tất cả tên đã dùng của member
+      const usedDocs = await imageNamesCol.find({ memberId }).toArray();
+      const usedNames = usedDocs.map((doc) => doc.nameImage);
+      // Tìm tên chưa dùng (random)
+      const unusedNames = nameImages.filter(
+        (name: string) => !usedNames.includes(name)
+      );
+      let availableName: string | undefined = undefined;
+      if (unusedNames.length > 0) {
+        // Random 1 tên chưa dùng
+        availableName =
+          unusedNames[Math.floor(Math.random() * unusedNames.length)];
+      }
+      if (availableName) {
+        res.status(200).json({ ok: true, nameImage: availableName });
+      } else {
+        res.status(400).json({
+          ok: false,
+          message: "All names have been used.",
+          data: null,
+        });
+      }
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  };
 }
 
 interface ICreatePostImg extends IPostImgReg {

@@ -1,4 +1,10 @@
-import { Collection, Db, Document, MongoClient } from "mongodb";
+import {
+  Collection,
+  Db,
+  Document,
+  MongoClient,
+  MongoClientOptions,
+} from "mongodb";
 import { logger } from "../logger";
 
 // Connection URL
@@ -9,11 +15,17 @@ export async function setupDB(
   url: string,
   dbName: string
 ): Promise<[MongoClient, Db]> {
-  client = new MongoClient(url);
+  // Lấy maxPoolSize từ biến môi trường hoặc mặc định 50
+  const maxPoolSize = parseInt(process.env.MONGO_MAX_POOL_SIZE || "50", 10);
+  const options: MongoClientOptions = {
+    maxPoolSize,
+    // Có thể thêm các option khác nếu cần
+  };
+  client = new MongoClient(url, options);
 
   await client.connect();
 
-  logger.info(`MongoDB connector connected!`);
+  logger.info(`MongoDB connector connected! (maxPoolSize=${maxPoolSize})`);
   database = client.db(dbName);
 
   return [client, database];

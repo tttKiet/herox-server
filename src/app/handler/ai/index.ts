@@ -24,14 +24,27 @@ async function fetchAI(apiKey: string, body: IBodyChatRespDeepseek) {
     const resp = await res.json();
 
     if (res.ok) {
-      const chatResp = resp?.choices[0]?.message?.content;
+      const chatResp = resp?.choices?.[0]?.message?.content;
       return chatResp;
     } else {
-      console.log("Error: ", resp.error);
-      throw new Error(resp?.error?.message || "Đã có lỗi xảy ra gọi AI!");
+      console.log("resp:", resp);
+      console.log("res.status:", res.status);
+      console.log("res.statusText:", res.statusText);
+      // In chi tiết lỗi nếu có
+      if (resp?.error) {
+        console.log("error message:", resp.error.message);
+        console.log("error type:", resp.error.type);
+        console.log("error code:", resp.error.code);
+      }
+      throw new Error(
+        resp?.error?.message || `Đã có lỗi xảy ra gọi AI! Status: ${res.status}`
+      );
     }
   } catch (error: any) {
-    console.log(error);
+    console.log("error when fetching AI:", error);
+    if (error?.response) {
+      console.log("error.response:", error.response);
+    }
     throw new Error(error?.message || "Đã có lỗi xảy ra gọi AI catch!");
   }
 }

@@ -36,6 +36,7 @@ class PromptService {
         });
         if (promptExisted) throw new Error(`Prompt existed!`);
       }
+
       const newPrompt: IPrompt = {
         ...data,
         createdAt: new Date(),
@@ -123,9 +124,12 @@ class PromptService {
         })
         .toArray();
 
+      // console.log("list: ", list);
       // Nếu không có prompt nào, lấy _id của admin root (fullName: "Hero")
       if (!list.length) {
         const adminDoc = await adminCol.findOne({ fullName: "Hero" });
+        // console.log("adminDoc: ", adminDoc);
+
         if (!adminDoc) {
           throw new Error(
             "No admin prompt found: missing admin with fullName 'Hero'"
@@ -138,6 +142,7 @@ class PromptService {
             memberId: adminDoc._id.toString(),
           })
           .toArray();
+        // console.log("list promptcol: ", list);
       }
 
       if (!list.length) {

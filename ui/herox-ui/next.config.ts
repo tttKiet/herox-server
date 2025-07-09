@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_API_BASE_URL: API_BASE,
   },
+  staticPageGenerationTimeout: 120,
   async rewrites() {
     return [
       {

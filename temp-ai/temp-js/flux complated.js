@@ -1,1 +1,1 @@
-localStorage.removeItem("IMAGE_NAME");
+console.log(`$apiDeepSeek`);

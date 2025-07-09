@@ -18,18 +18,7 @@ async function serverRunner() {
   app.use(express.json()); // parse application/json
   app.use(express.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
 
-  app.use(morgan("dev"));
-
   // Sử dụng morgan để log ngày giờ phút giây khi có request nếu LOG_DEBUG=true
-  if (process.env.LOG_DEBUG === "true") {
-    app.use(
-      morgan(
-        ":date[iso] [:method] :url :status :res[content-length] - :response-time ms"
-      )
-    );
-  }
-
-  // Sử dụng morgan để log theo định dạng giờ:phút:giây ngày/tháng/năm khi LOG_DEBUG=true
   if (process.env.LOG_DEBUG === "true") {
     morgan.token("custom-date", () => {
       const now = new Date();

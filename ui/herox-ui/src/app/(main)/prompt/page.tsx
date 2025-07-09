@@ -10,11 +10,11 @@ export default function PromptPostPage() {
           <div className="flex items-center">
             <span className="w-[3px] h-5 bg-primary rounded-sm mr-2" />
             <h6 className="text-sm font-bold uppercase text-[#333335]">
-              Manager Prompt Post
+              Manager Prompt
             </h6>
           </div>
           <p className="subtitle text-[#7987a1] fs-12 fw-normal ml-[11px]">
-            This is the content of the Prompt Post page.
+            This is the content of the Prompt page.
           </p>
         </div>
         {/* body */}

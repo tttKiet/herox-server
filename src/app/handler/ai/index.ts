@@ -18,6 +18,7 @@ async function fetchAI(
 ): Promise<string> {
   const maxRetries = 2;
   const timeoutMs = 60000; // 60 seconds
+  console.log("[fetchAI] Starting request with body:", { apiKey, body });
 
   try {
     console.log(
@@ -124,8 +125,9 @@ class AiHandler {
   public chatResp: RequestHandler<Partial<IBodyChatRespDeepseek>> =
     async function (req, res) {
       const { apiKey, userMessage, systemMessage, chatKey } = req.body;
+      console.log("[AiHandler] chatResp called with body:", req.body);
 
-      if (!apiKey || !userMessage) {
+      if (!apiKey || !userMessage || !chatKey) {
         res.status(400).json({ ok: false, message: "Missing input!" });
         return;
       }

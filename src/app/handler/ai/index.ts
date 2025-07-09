@@ -46,7 +46,6 @@ async function fetchAI(
 
     if (res.ok) {
       const chatResp = resp?.choices?.[0]?.message?.content;
-      console.log(`[fetchAI] Success after ${retryCount + 1} attempts`);
       return chatResp;
     } else {
       console.log("resp:", resp);
@@ -101,7 +100,9 @@ async function fetchAI(
     if (isTimeoutError && retryCount < maxRetries) {
       const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
       console.log(
-        `[fetchAI] Retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`
+        `-------------> [fetchAI] Retrying in ${delay}ms... (${
+          retryCount + 1
+        }/${maxRetries})`
       );
 
       await new Promise((resolve) => setTimeout(resolve, delay));
@@ -125,7 +126,7 @@ class AiHandler {
   public chatResp: RequestHandler<Partial<IBodyChatRespDeepseek>> =
     async function (req, res) {
       const { apiKey, userMessage, systemMessage, chatKey } = req.body;
-      console.log("[AiHandler] chatResp called with body:", req.body);
+      console.log("\n[AiHandler] chatResp called with body:", req.body);
 
       if (!apiKey || !userMessage || !chatKey) {
         res.status(400).json({ ok: false, message: "Missing input!" });
@@ -153,6 +154,7 @@ class AiHandler {
 
         res.status(200).json({
           ok: true,
+          message: "Chat response received successfully!",
           data: respAi,
         });
         return;
@@ -160,7 +162,7 @@ class AiHandler {
         console.error("Error:", err.message);
         res.status(500).json({
           ok: false,
-          error: err.message,
+          message: err.message,
         });
         return;
       }

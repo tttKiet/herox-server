@@ -2,6 +2,7 @@ import "dotenv/config";
 import { IPostReg } from "../utils/interfaces";
 import { logger } from "../utils/logger";
 import PromptService from "./PromptService";
+import axios from "axios";
 
 const API_N8N_CREATE_POST_AGENT = process.env.API_N8N_HELPER_REUP_POST_IMG_PRO;
 
@@ -28,22 +29,23 @@ class N8nHelper {
         memberId: apiKey,
       });
 
-      const resp = await fetch(API_N8N_CREATE_POST_AGENT!, {
-        method: "POST",
-        headers: {
-          "Content-Type": "Application/json",
-        },
-        body: JSON.stringify({
+      const resp = await axios.post(
+        API_N8N_CREATE_POST_AGENT!,
+        {
           userMessage: userMessage,
           folderName,
           prompt: {
             post: promptPostPicked.context,
             image: "",
           },
-        }),
-      });
-
-      const res: IResN8nPost = await resp.json();
+        },
+        {
+          headers: {
+            "Content-Type": "Application/json",
+          },
+        }
+      );
+      const res: IResN8nPost = resp.data;
       return res;
     } catch (error: any) {
       console.log(error);

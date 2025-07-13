@@ -124,15 +124,9 @@ class XHandler {
   };
 
   public reupPost: RequestHandler<IPostReg> = async function (req, res) {
-    const { userMessage, folderName, isCreateImg, accountVerified, apiKey } =
-      req.body;
+    const { userMessage, folderName, apiKey } = req.body;
 
-    if (
-      !userMessage ||
-      !folderName ||
-      isCreateImg == undefined ||
-      accountVerified == undefined
-    ) {
+    if (!userMessage || !folderName) {
       console.log("Missing parameters body: ", req.body);
 
       res.status(400).json({

@@ -388,7 +388,7 @@ class XHandler {
       const usedNames = usedDocs.map((doc) => doc.nameImage);
       // Tìm tên chưa dùng (random)
       const unusedNames = nameList.filter(
-        (name: string) => !usedNames.includes(name)
+        (name: string) => !usedNames.includes(name.toLowerCase())
       );
       let availableName: string | undefined = undefined;
       if (unusedNames.length > 0) {
@@ -397,7 +397,11 @@ class XHandler {
           unusedNames[Math.floor(Math.random() * unusedNames.length)];
       }
       if (availableName) {
-        res.status(200).json({ ok: true, nameImage: availableName });
+        res.status(200).json({
+          ok: true,
+          message: "Get name succesfully!",
+          nameImage: availableName,
+        });
       } else {
         res.status(400).json({
           ok: false,

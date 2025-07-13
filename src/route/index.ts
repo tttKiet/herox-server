@@ -43,7 +43,6 @@ mainRouter.post(
 );
 
 // prompt
-
 mainRouter.post(
   "/api/v1/prompt/pick-prompt",
   managerHandler.memberMdw,

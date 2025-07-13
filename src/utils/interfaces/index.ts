@@ -1,10 +1,8 @@
 import { ObjectId } from "mongodb";
 
-export interface IPostImgReg {
+export interface IPostReg {
   userMessage: string;
-  isCreateImg: boolean;
   folderName: string;
-  accountVerified: string;
 }
 
 export interface IPost {

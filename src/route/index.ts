@@ -22,7 +22,7 @@ mainRouter.get("/api/v1/reup/post/:id", xHandler.getPostById);
 mainRouter.post(
   "/api/v1/reup/post-image",
   managerHandler.memberMdw,
-  xHandler.reupPostImage
+  xHandler.reupPost
 );
 
 // check post interact

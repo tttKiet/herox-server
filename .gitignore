@@ -2,6 +2,6 @@
 /ui/node_modules
 /assets/images/root-imgs/*
 /assets/images/store-imgs/*
-/.env
+/.env*
 /dist
 /local-files

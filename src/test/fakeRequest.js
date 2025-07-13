@@ -1,27 +1,22 @@
 // Fake concurrent requests for debugging
 const axios = require("axios");
 
-const TARGET_URL =
-  process.env.FAKE_REQUEST_URL ||
-  "http://127.0.0.1:3000/api/v1/x/check-interact-post";
-const TOTAL_REQUESTS = parseInt(process.env.FAKE_REQUEST_TOTAL || "7000", 10); // tổng số request
-const CONCURRENCY = parseInt(
-  process.env.FAKE_REQUEST_CONCURRENCY || "7000",
-  10
-); // số request đồng thời
+const TARGET_URL = process.env.FAKE_REQUEST_URL || "https://nimo.tokyo/login";
+const TOTAL_REQUESTS = parseInt(process.env.FAKE_REQUEST_TOTAL || "100", 10); // tổng số request
+const CONCURRENCY = parseInt(process.env.FAKE_REQUEST_CONCURRENCY || "100", 10); // số request đồng thời
 console.log("TARGET_URL: ", TARGET_URL);
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function postWithRetry(body, index, maxRetry = 0, delayMs = 1000) {
+async function postWithRetry(body, index, maxRetry = 0, delayMs = 5000) {
   let attempt = 0;
   while (attempt <= maxRetry) {
     console.log("index: ", index);
 
     try {
-      const res = await axios.post(TARGET_URL, body);
+      const res = await axios.get(TARGET_URL, body);
 
       return { status: res.status, data: res.data };
     } catch (err) {
@@ -84,7 +79,7 @@ async function runBatch(batch) {
     });
     sent += batchSize;
     batchNum++;
-    if (sent < TOTAL_REQUESTS) await sleep(500); // nghỉ 0.5s giữa các batch
+    if (sent < TOTAL_REQUESTS) await sleep(1000); // nghỉ 0.5s giữa các batch
   }
   console.log("\nAll requests sent!");
 })();

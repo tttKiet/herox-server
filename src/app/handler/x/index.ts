@@ -3,11 +3,7 @@ import GpmHandler from "../../../class/GpmHandler";
 import { logger } from "../../../utils/logger";
 import puppeteer from "puppeteer";
 import { IFunctionHandler } from "../../../utils";
-import {
-  IPost,
-  IPostImgReg,
-  IUserInteractPost,
-} from "../../../utils/interfaces";
+import { IPost, IPostReg, IUserInteractPost } from "../../../utils/interfaces";
 import N8nHelper from "../../../class/N8nHelper";
 import { ObjectId } from "mongodb";
 import { getCollection } from "../../../utils/mongoDb";
@@ -134,10 +130,7 @@ class XHandler {
     }
   };
 
-  public reupPostImage: RequestHandler<IPostImgReg> = async function (
-    req,
-    res
-  ) {
+  public reupPost: RequestHandler<IPostReg> = async function (req, res) {
     const { userMessage, folderName, isCreateImg, accountVerified, apiKey } =
       req.body;
 
@@ -147,19 +140,11 @@ class XHandler {
       isCreateImg == undefined ||
       accountVerified == undefined
     ) {
-      res.status(400).json({
-        ok: false,
-        message: "Chưa truyền đủ 4 tham số !!!",
-      });
-      return;
-    }
+      console.log("Missing parameters body: ", req.body);
 
-    const isFolderExisted = await doesFolderExist(folderName);
-    if (!isFolderExisted) {
-      // logger.error(`${folderName} is not on server !`);
       res.status(400).json({
         ok: false,
-        message: "Dự án chưa được thêm trên server !!!",
+        message: "Missing parameters body!",
       });
       return;
     }
@@ -180,22 +165,20 @@ class XHandler {
 
       res.status(200).json({
         ok: true,
+        message: "Task post created successfully!",
         data: {
           id: insertedId,
         },
       });
 
-      createPostImg(
+      createPost(
         {
           insertedId,
           userMessage,
-          isCreateImg,
           folderName,
-          accountVerified,
         },
         apiKey
       );
-      // payment.useCreateImg({ memberId: apiKey, postId: insertedId.toString() });
       return;
     } catch (err: any) {
       console.error("Error:", err.message);
@@ -441,33 +424,22 @@ class XHandler {
   };
 }
 
-interface ICreatePostImg extends IPostImgReg {
+interface ICreatePostImg extends IPostReg {
   insertedId: ObjectId;
 }
 
-async function createPostImg(
-  {
-    userMessage,
-    insertedId,
-    isCreateImg,
-    folderName,
-    accountVerified,
-  }: ICreatePostImg,
+async function createPost(
+  { userMessage, insertedId, folderName }: ICreatePostImg,
   apikey: string
 ) {
   const n8nHelper = new N8nHelper();
   const postsCol = getCollection<IPost>("posts");
 
-  const imgRootBase64 = await getRandomImageBase64(folderName);
-
   try {
     const renderResp = await n8nHelper.startRepostImage(
       {
         userMessage,
-        imgRootBase64,
-        isCreateImg,
         folderName,
-        accountVerified,
       },
       apikey
     );
@@ -475,16 +447,11 @@ async function createPostImg(
     let updateFields: Partial<IPost>;
 
     if (renderResp?.ok == true) {
-      const pathResp = await saveHostedImageToStore(
-        renderResp.data.imageUrl,
-        folderName
-      );
-
       updateFields = {
         status: "success",
-        localPath: pathResp,
+        localPath: "",
         content: renderResp.data.post,
-        imageUrl: renderResp.data.imageUrl,
+        imageUrl: "",
         updatedAt: new Date(),
       };
     } else {
@@ -497,10 +464,8 @@ async function createPostImg(
     }
 
     await postsCol.updateOne({ _id: insertedId }, { $set: updateFields });
-    // logger.info(`Process ${insertedId} → done`);
   } catch (err: any) {
-    console.log("err: ", err);
-    // 4b) Nếu lỗi, cập nhật status = error
+    console.log("Error create post: ", err);
     await postsCol.updateOne(
       { _id: insertedId },
       {

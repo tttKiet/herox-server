@@ -1,18 +1,13 @@
 import "dotenv/config";
-import { IPostImgReg } from "../utils/interfaces";
+import { IPostReg } from "../utils/interfaces";
 import { logger } from "../utils/logger";
 import PromptService from "./PromptService";
 
-const API_N8N_HELPER_REUP_POST_IMG =
-  process.env.API_N8N_HELPER_REUP_POST_IMG_PRO;
+const API_N8N_CREATE_POST_AGENT = process.env.API_N8N_HELPER_REUP_POST_IMG_PRO;
 
 const promptService = new PromptService();
 
-export interface IPostImgRegN8n extends IPostImgReg {
-  imgRootBase64: string;
-}
-
-export interface IResN8nPostImage {
+export interface IResN8nPost {
   ok: boolean;
   data: {
     post: string;
@@ -24,13 +19,7 @@ class N8nHelper {
   constructor() {}
 
   async startRepostImage(
-    {
-      userMessage,
-      imgRootBase64,
-      isCreateImg,
-      accountVerified,
-      folderName,
-    }: Partial<IPostImgRegN8n>,
+    { userMessage, folderName }: Partial<IPostReg>,
     apiKey: string
   ) {
     try {
@@ -38,18 +27,8 @@ class N8nHelper {
         type: "PROMPT_POST",
         memberId: apiKey,
       });
-      // let promptImg: any = "";
 
-      // if (isCreateImg) {
-      //   const promptImgPicked = await promptService.pickPrompt({
-      //     type: "PROMPT_IMG",
-      //     memberId: apiKey,
-      //   });
-
-      //   promptImg = promptImgPicked.context;
-      // }
-
-      const resp = await fetch(API_N8N_HELPER_REUP_POST_IMG!, {
+      const resp = await fetch(API_N8N_CREATE_POST_AGENT!, {
         method: "POST",
         headers: {
           "Content-Type": "Application/json",
@@ -57,9 +36,6 @@ class N8nHelper {
         body: JSON.stringify({
           userMessage: userMessage,
           folderName,
-          imgRootBase64,
-          isCreateImg,
-          accountVerified,
           prompt: {
             post: promptPostPicked.context,
             image: "",
@@ -67,7 +43,7 @@ class N8nHelper {
         }),
       });
 
-      const res: IResN8nPostImage = await resp.json();
+      const res: IResN8nPost = await resp.json();
       return res;
     } catch (error: any) {
       console.log(error);

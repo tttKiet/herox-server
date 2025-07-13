@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { IAdmin, IPayment, IPostImgReg, IPrompt } from "../utils/interfaces";
+import { IAdmin, IPayment, IPrompt } from "../utils/interfaces";
 import { logger } from "../utils/logger";
 import { ObjectId } from "mongodb";
 import { getCollection } from "../utils/mongoDb";

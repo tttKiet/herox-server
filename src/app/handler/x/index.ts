@@ -1,19 +1,12 @@
 import { RequestHandler } from "express";
-import GpmHandler from "../../../class/GpmHandler";
-import { logger } from "../../../utils/logger";
-import puppeteer from "puppeteer";
-import { IFunctionHandler } from "../../../utils";
-import { IPost, IPostReg, IUserInteractPost } from "../../../utils/interfaces";
-import N8nHelper from "../../../class/N8nHelper";
 import { ObjectId } from "mongodb";
-import { getCollection } from "../../../utils/mongoDb";
-import {
-  doesFolderExist,
-  getRandomImageBase64,
-  saveHostedImageToStore,
-} from "../../../utils/store-img";
+import puppeteer from "puppeteer";
+import GpmHandler from "../../../class/GpmHandler";
+import N8nHelper from "../../../class/N8nHelper";
 import Payment from "../../../class/Payment";
-import PromptService from "src/class/PromptService";
+import { IPost, IPostReg, IUserInteractPost } from "../../../utils/interfaces";
+import { logger } from "../../../utils/logger";
+import { getCollection } from "../../../utils/mongoDb";
 
 const payment = new Payment();
 

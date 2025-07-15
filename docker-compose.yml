@@ -69,7 +69,6 @@ services:
       - .env
     environment:
       - NODE_ENV=production
-      - NODE_OPTIONS=--no-experimental-fetch
       - LOG_DEBUG=true
     restart: unless-stopped
     volumes:

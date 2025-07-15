@@ -1,6 +1,9 @@
 import e, { RequestHandler } from "express";
 import PromptService from "../../../class/PromptService";
 import axios from "axios";
+import { isDeepSeekAPIKey, isGeminiAPIKey } from "../../../utils/functions";
+import GeminiAI from "../../../class/GeminiHandler";
+import { logger } from "../../../utils/logger";
 const promptService = new PromptService();
 
 export interface IBodyChatRespDeepseek {
@@ -12,7 +15,7 @@ export interface IBodyChatRespDeepseek {
   model: "deepseek-chat";
 }
 
-async function fetchAI(
+async function fetchAIDeepseek(
   apiKey: string,
   body: IBodyChatRespDeepseek,
   retryCount = 0
@@ -68,7 +71,7 @@ async function fetchAI(
         `Retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
-      return fetchAI(apiKey, body, retryCount + 1);
+      return fetchAIDeepseek(apiKey, body, retryCount + 1);
     }
 
     // Nếu đã retry hết hoặc không phải timeout error
@@ -97,23 +100,44 @@ class AiHandler {
       }
 
       try {
-        const promptCmtPicked = await promptService.pickPrompt({
-          type: "PROMPT_CMT",
-          memberId: apiKey,
-        });
-
-        const promptCmt = promptCmtPicked.context;
-        const respAi = await fetchAI(chatKey, {
-          messages: [
-            {
-              role: "system",
-              content: promptCmt + "\n" + systemMessage,
-            },
-            { role: "user", content: userMessage },
-          ],
-          stream: false,
-          model: "deepseek-chat",
-        });
+        // Chọn provider dựa vào chatKey
+        let respAi: string;
+        if (isDeepSeekAPIKey(chatKey)) {
+          // DeepSeek
+          const promptCmtPicked = await promptService.pickPrompt({
+            type: "PROMPT_CMT",
+            memberId: apiKey,
+          });
+          const promptCmt = promptCmtPicked.context;
+          respAi = await fetchAIDeepseek(chatKey, {
+            messages: [
+              {
+                role: "system",
+                content: promptCmt + "\n" + systemMessage,
+              },
+              { role: "user", content: userMessage },
+            ],
+            stream: false,
+            model: "deepseek-chat",
+          });
+        } else if (isGeminiAPIKey(chatKey)) {
+          // Gemini
+          const gemini = new GeminiAI(chatKey);
+          // Có thể dùng promptCmt nếu muốn, hoặc chỉ systemMessage
+          const promptCmtPicked = await promptService.pickPrompt({
+            type: "PROMPT_CMT",
+            memberId: apiKey,
+          });
+          const promptCmt = promptCmtPicked.context;
+          const sysMsg = promptCmt + "\n" + (systemMessage || "");
+          respAi = await gemini.chat(userMessage, sysMsg);
+        } else {
+          res.status(400).json({
+            ok: false,
+            message: "API key không hợp lệ hoặc không xác định provider!",
+          });
+          return;
+        }
 
         res.status(200).json({
           ok: true,

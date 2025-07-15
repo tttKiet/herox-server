@@ -405,7 +405,7 @@ class XHandler {
       } else {
         res.status(400).json({
           ok: false,
-          message: "All names have been used.",
+          message: "All image names have been used.",
           data: null,
         });
       }

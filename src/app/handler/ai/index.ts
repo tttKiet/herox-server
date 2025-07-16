@@ -148,7 +148,6 @@ class AiHandler {
           }
 
           respAi = messageAi;
-          return;
         } else {
           res.status(400).json({
             ok: false,
@@ -156,6 +155,14 @@ class AiHandler {
           });
           return;
         }
+
+        // return success response
+        res.status(200).json({
+          ok: true,
+          message: "Chat response received successfully!",
+          data: respAi,
+        });
+        return;
       } catch (err: any) {
         console.log("Error: ", err);
         res.status(500).json({

@@ -4,7 +4,9 @@ import axios from "axios";
 import { isDeepSeekAPIKey, isGeminiAPIKey } from "../../../utils/functions";
 import GeminiAI from "../../../class/GeminiHandler";
 import { logger } from "../../../utils/logger";
+import N8nHelper from "src/class/N8nHelper";
 const promptService = new PromptService();
+const n8nHelper = new N8nHelper();
 
 export interface IBodyChatRespDeepseek {
   messages: [
@@ -131,10 +133,26 @@ class AiHandler {
           const promptCmt = promptCmtPicked.context;
           const sysMsg = promptCmt + "\n" + (systemMessage || "");
           respAi = await gemini.chat(userMessage, sysMsg);
+        } else if (chatKey == "" || chatKey == "nimo-ai-server") {
+          const resp = await n8nHelper.chatReplyWithAgent(
+            { userMessage },
+            apiKey
+          );
+          const messageAi = resp?.data;
+
+          if (!messageAi) {
+            res.status(500).json({
+              ok: false,
+              message: "No response received from N8n AI server!",
+            });
+            return;
+          }
+
+          respAi = messageAi;
         } else {
           res.status(400).json({
             ok: false,
-            message: "API key không hợp lệ hoặc không xác định provider!",
+            message: "Invalid API key or unknown provider!",
           });
           return;
         }

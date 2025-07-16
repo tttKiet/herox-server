@@ -4,4 +4,4 @@
 /assets/images/store-imgs/*
 /.env*
 /dist
-/local-files
+/local-filesgit checkout -- docker-compose.yml

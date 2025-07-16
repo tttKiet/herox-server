@@ -4,7 +4,7 @@ import axios from "axios";
 import { isDeepSeekAPIKey, isGeminiAPIKey } from "../../../utils/functions";
 import GeminiAI from "../../../class/GeminiHandler";
 import { logger } from "../../../utils/logger";
-import N8nHelper from "src/class/N8nHelper";
+import N8nHelper from "../../../class/N8nHelper";
 const promptService = new PromptService();
 const n8nHelper = new N8nHelper();
 

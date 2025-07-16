@@ -76,12 +76,6 @@ class N8nHelper {
   }
 
   async chatReplyWithAgent({ userMessage }: IRespN8nChatReply, apiKey: string) {
-    console.log("chatReplyWithAgent called with userMessage:", userMessage);
-    console.log(
-      "API_N8N_CHAT_REPLY_WITH_AGENT:",
-      API_N8N_CHAT_REPLY_WITH_AGENT
-    );
-
     try {
       const resp = await axios.post(
         API_N8N_CHAT_REPLY_WITH_AGENT!,
@@ -94,10 +88,9 @@ class N8nHelper {
           },
         }
       );
-      const res: IRespN8nAi = resp.data;
-      console.log("res: ", res);
+      const resData: IRespN8nAi = resp.data;
 
-      return res;
+      return resData;
     } catch (error: any) {
       console.log(error);
       logger.error(error?.message);

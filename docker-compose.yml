@@ -95,24 +95,6 @@ services:
     networks:
       - herox-network
 
-  # Ngrok
-  # ngrok:
-  #   image: ngrok/ngrok:latest
-  #   container_name: ngrok
-  #   command:
-  #     - "http"
-  #     - "herox-ui:4454" # Kết nối vào service tên là "herox-server"
-  #     - --domain=${NGROK_STATIC_DOMAIN}
-  #   ports:
-  #     - "4040:4040"
-  #   environment:
-  #     - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-  #   depends_on:
-  #     - herox-ui
-  #   restart: unless-stopped
-  #   networks:
-  #     - herox-network
-
 volumes:
   mongodb_data:
   n8n_data:

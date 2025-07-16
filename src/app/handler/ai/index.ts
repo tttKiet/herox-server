@@ -95,7 +95,7 @@ class AiHandler {
     async function (req, res) {
       const { apiKey, userMessage, systemMessage, chatKey } = req.body;
 
-      if (!apiKey || !userMessage || !chatKey) {
+      if (!apiKey || !userMessage) {
         res.status(400).json({ ok: false, message: "Missing input!" });
         return;
       }
@@ -132,7 +132,7 @@ class AiHandler {
           const promptCmt = promptCmtPicked.context;
           const sysMsg = promptCmt + "\n" + (systemMessage || "");
           respAi = await gemini.chat(userMessage, sysMsg);
-        } else if (chatKey == "" || chatKey == "nimo-ai-server") {
+        } else if (!chatKey || chatKey == "" || chatKey == "nimo-ai-server") {
           const resp = await n8nHelper.chatReplyWithAgent(
             { userMessage },
             apiKey
@@ -156,13 +156,6 @@ class AiHandler {
           });
           return;
         }
-
-        res.status(200).json({
-          ok: true,
-          message: "Chat response received successfully!",
-          data: respAi,
-        });
-        return;
       } catch (err: any) {
         console.log("Error: ", err);
         res.status(500).json({

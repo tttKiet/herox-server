@@ -1,10 +1,9 @@
-import e, { RequestHandler } from "express";
-import PromptService from "../../../class/PromptService";
 import axios from "axios";
-import { isDeepSeekAPIKey, isGeminiAPIKey } from "../../../utils/functions";
+import { RequestHandler } from "express";
 import GeminiAI from "../../../class/GeminiHandler";
-import { logger } from "../../../utils/logger";
 import N8nHelper from "../../../class/N8nHelper";
+import PromptService from "../../../class/PromptService";
+import { isDeepSeekAPIKey, isGeminiAPIKey } from "../../../utils/functions";
 const promptService = new PromptService();
 const n8nHelper = new N8nHelper();
 
@@ -139,6 +138,7 @@ class AiHandler {
             apiKey
           );
           const messageAi = resp?.data;
+          console.log("messageAi: ", messageAi);
 
           if (!messageAi) {
             res.status(500).json({

@@ -138,7 +138,6 @@ class AiHandler {
             apiKey
           );
           const messageAi = resp?.data;
-          console.log("messageAi: ", messageAi);
 
           if (!messageAi) {
             res.status(500).json({
@@ -149,6 +148,7 @@ class AiHandler {
           }
 
           respAi = messageAi;
+          return;
         } else {
           res.status(400).json({
             ok: false,

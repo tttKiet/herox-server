@@ -352,7 +352,6 @@ export default function TablePromptPost() {
         <div className="flex gap-3 items-center">
           <Select
             label="Type"
-            size="sm"
             color="default"
             labelPlacement="outside"
             className="min-w-44 no-mt-select"
@@ -371,7 +370,6 @@ export default function TablePromptPost() {
             label="Active Status"
             color="default"
             labelPlacement="outside"
-            size="sm"
             className="min-w-44 no-mt-select"
             selectedKeys={filterStatus ? [filterStatus] : []}
             onSelectionChange={(keys) => {
@@ -387,7 +385,6 @@ export default function TablePromptPost() {
         <Button
           color="primary"
           className="mt-5"
-          size="sm"
           onPress={handleAddPrompt}
           startContent={<TiPlus />}
         >

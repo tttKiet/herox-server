@@ -79,4 +79,47 @@ mainRouter.post(
   xHandler.getAvailableImageName
 );
 
+// Topic Project Management
+mainRouter.post(
+  "/api/v1/topic",
+  managerHandler.memberMdw,
+  managerHandler.createTopics
+);
+
+mainRouter.get("/api/v1/topic", managerHandler.getTopics);
+
+mainRouter.delete(
+  "/api/v1/topic",
+  managerHandler.memberMdw,
+  managerHandler.deleteTopics
+);
+
+// AI-powered Topic Generation
+mainRouter.post(
+  "/api/v1/topic/generator",
+  managerHandler.memberMdw,
+  managerHandler.generateTopics
+);
+
+// Project Management
+mainRouter.post(
+  "/api/v1/project",
+  managerHandler.memberMdw,
+  managerHandler.createProject
+);
+
+mainRouter.get("/api/v1/project", managerHandler.getProjects);
+
+mainRouter.delete(
+  "/api/v1/project",
+  managerHandler.memberMdw,
+  managerHandler.deleteProject
+);
+
+mainRouter.delete(
+  "/api/v1/projects",
+  managerHandler.memberMdw,
+  managerHandler.deleteProjects
+);
+
 export default mainRouter;

@@ -57,3 +57,19 @@ export interface IPrompt {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface ITopic {
+  _id?: ObjectId;
+  topicName: string;
+  projectName: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IProject {
+  _id?: ObjectId;
+  name: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

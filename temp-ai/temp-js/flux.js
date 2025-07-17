@@ -15,4 +15,3 @@ function addUserToActiveList(username) {
 
 // Test hàm
 addUserToActiveList("$usernameInteract");
-  ,ji

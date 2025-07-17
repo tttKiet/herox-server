@@ -15,6 +15,20 @@ const folderPathStatic = path.resolve(__dirname, `../assets/images/store-imgs`);
 
 async function serverRunner() {
   const app = express();
+
+  // Set timeout to 5 minutes for long-running requests
+  app.use((req, res, next) => {
+    // 300000 milliseconds = 5 minutes
+    res.setTimeout(300000, () => {
+      logger.error("Request timeout:", req.path);
+      res.status(503).send({
+        error: "Request timeout",
+        message: "Server took too long to respond",
+      });
+    });
+    next();
+  });
+
   app.use(express.json()); // parse application/json
   app.use(express.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
 

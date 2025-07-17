@@ -1,7 +1,12 @@
 "use client";
 
 import React from "react";
-import { HiHome, HiOutlineNewspaper } from "react-icons/hi2";
+import {
+  HiHome,
+  HiOutlineNewspaper,
+  HiTag,
+  HiFolderOpen,
+} from "react-icons/hi2";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -26,6 +31,16 @@ const navBarLeft: MenuProps["items"] = [
         icon: <HiOutlineNewspaper />,
         key: "PROMPT",
       },
+      {
+        label: <Link href="/project">Project</Link>,
+        icon: <HiFolderOpen />,
+        key: "PROJECT",
+      },
+      {
+        label: <Link href="/topic">Topic</Link>,
+        icon: <HiTag />,
+        key: "TOPIC",
+      },
     ],
   },
 ];
@@ -40,6 +55,8 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const getSelectedKey = () => {
     if (pathname === "/") return ["DASH_BOARD"];
     if (pathname.startsWith("/prompt")) return ["PROMPT"];
+    if (pathname.startsWith("/topic")) return ["TOPIC"];
+    if (pathname.startsWith("/project")) return ["PROJECT"];
     return [];
   };
 

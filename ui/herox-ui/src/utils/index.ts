@@ -4,6 +4,9 @@ import axios from "axios";
 interface NotificationFetchParams {
   promiseRunner: Promise<unknown>;
   toastSetting?: ToastOptions;
+  loadingMessage?: string;
+  successMessage?: string;
+  errorMessage?: string;
 }
 
 interface ApiResponse<T = unknown> {
@@ -15,27 +18,88 @@ interface ApiResponse<T = unknown> {
 export async function notificationFetch<T = unknown>({
   promiseRunner,
   toastSetting,
+  loadingMessage,
+  successMessage,
+  errorMessage,
 }: NotificationFetchParams): Promise<ApiResponse<T>> {
-  try {
-    const res = (await promiseRunner) as ApiResponse<T>;
-    console.log("res api: ", res);
+  // Create a toast ID to track and update
+  const toastId = toastSetting?.toastId || `toast-${Date.now()}`;
 
-    // Luôn show message nếu có, kể cả khi ok: false
+  try {
+    // Show loading toast if a message is provided
+    if (loadingMessage) {
+      toast.info(loadingMessage, {
+        ...toastSetting,
+        toastId,
+        autoClose: false, // Don't close automatically while loading
+        isLoading: true,
+      });
+    }
+
+    const res = (await promiseRunner) as ApiResponse<T>;
+
+    // Update or create toast
     if (res.ok) {
-      toast.success(res.message || "Success!", toastSetting);
+      const message = successMessage || res.message || "Success!";
+
+      if (loadingMessage) {
+        // Update the existing toast
+        toast.update(toastId, {
+          render: message,
+          type: "success",
+          isLoading: false,
+          ...toastSetting,
+        });
+      } else {
+        // Create a new toast
+        toast.success(message, toastSetting);
+      }
       return res;
     } else {
-      toast.error(res.message || "An error occurred!", toastSetting);
+      const message = errorMessage || res.message || "An error occurred!";
+
+      if (loadingMessage) {
+        // Update the existing toast
+        toast.update(toastId, {
+          render: message,
+          type: "error",
+          isLoading: false,
+          ...toastSetting,
+        });
+      } else {
+        // Create a new toast
+        toast.error(message, toastSetting);
+      }
       return res;
     }
   } catch (error) {
-    let message = "An error occurred!";
+    let message = errorMessage || "An error occurred!";
+
     if (axios.isAxiosError(error)) {
-      message = error.response?.data?.message || message;
+      if (error.code === "ECONNABORTED") {
+        message =
+          errorMessage ||
+          "Request timeout. The server took too long to respond.";
+      } else {
+        message = error.response?.data?.message || message;
+      }
     } else if (typeof error === "object" && error && "message" in error) {
       message = (error as { message?: string }).message || message;
     }
-    toast.error(message, toastSetting);
+
+    if (loadingMessage) {
+      // Update the existing toast
+      toast.update(toastId, {
+        render: message,
+        type: "error",
+        isLoading: false,
+        ...toastSetting,
+      });
+    } else {
+      // Create a new toast
+      toast.error(message, toastSetting);
+    }
+
     return {
       ok: false,
       message,

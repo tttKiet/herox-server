@@ -16,6 +16,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         pauseOnFocusLoss
         draggable
         pauseOnHover
+        className="font-medium"
+        toastClassName="toast-smaller"
+        style={{ fontSize: "0.85rem", width: "320px" }}
       />
       {children}
     </HeroUIProvider>

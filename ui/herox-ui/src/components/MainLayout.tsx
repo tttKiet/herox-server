@@ -64,14 +64,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     <div>
       <HeaderCustom />
       <div style={{ padding: "0 120px" }} className="my-4">
-        {/* <Breadcrumb
-          style={{ margin: "16px 0" }}
-          items={[
-            { title: "Home" },
-            { title: "List" },
-            { title: "MainLayout" },
-          ]}
-        /> */}
         <div className="">
           <div className="flex">
             <div>

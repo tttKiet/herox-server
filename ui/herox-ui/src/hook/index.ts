@@ -78,3 +78,5 @@ export function useAuthHook() {
 
   return user;
 }
+
+export { default as useLoading } from "./useLoading";

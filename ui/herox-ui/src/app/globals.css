@@ -35,3 +35,30 @@ body {
 .no-mt-select [data-slot="base"] {
   margin-top: 0 !important;
 }
+
+/* Toast custom styles */
+.toast-container-custom {
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+}
+
+.toast-smaller {
+  padding: 8px 12px !important;
+  min-height: 60px !important;
+}
+
+.toast-smaller .Toastify__toast-icon {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.toast-smaller .Toastify__close-button {
+  padding: 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.toast-smaller .Toastify__close-button svg {
+  width: 12px !important;
+  height: 12px !important;
+}

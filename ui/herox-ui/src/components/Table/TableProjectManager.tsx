@@ -175,7 +175,7 @@ export default function TableProjectManager() {
                       setIsConfirmOpen(true);
                     }}
                   >
-                    <DeleteIcon />
+                    <DeleteIcon className="text-[16px]" />
                   </Button>
                 </div>
               </TableCell>

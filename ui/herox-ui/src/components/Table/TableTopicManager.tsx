@@ -22,6 +22,7 @@ import {
   Select,
   SelectItem,
   Pagination,
+  Spinner,
 } from "@heroui/react";
 import React, { useCallback, useEffect, useState } from "react";
 import ModalCustom from "../Modal/Modal";
@@ -159,16 +160,26 @@ export default function TableTopicManager() {
         {" "}
         <div className="flex gap-4">
           <Select
-            label="Filter by Project"
+            size="md"
+            labelPlacement="outside"
+            defaultSelectedKeys={[""]}
             placeholder="All Projects"
             className="w-48"
-            classNames={{
-              trigger: "h-10",
-              value: "text-sm",
-            }}
-            selectedKeys={filterProjectName ? [filterProjectName] : []}
+            selectedKeys={filterProjectName ? [filterProjectName] : [""]}
             onSelectionChange={(keys) => {
               setFilterProjectName((Array.from(keys)[0] as string) || "");
+            }}
+            renderValue={(items) => {
+              return items.length === 0 ||
+                (items.length === 1 && !items[0].key) ? (
+                <div className="flex items-center gap-2">All Projects</div>
+              ) : (
+                items.map((item) => (
+                  <div key={item.key} className="flex items-center gap-2">
+                    {item.textValue || item.key}
+                  </div>
+                ))
+              );
             }}
           >
             <>
@@ -186,6 +197,7 @@ export default function TableTopicManager() {
           {selectedKeys.size > 0 && (
             <Button
               color="danger"
+              size="md"
               variant="light"
               startContent={<DeleteIcon />}
               onPress={handleDeleteSelected}
@@ -232,7 +244,7 @@ export default function TableTopicManager() {
         <TableBody
           items={topics}
           isLoading={loading}
-          loadingContent={<div>Loading topics...</div>}
+          loadingContent={<Spinner size="md"></Spinner>}
           emptyContent={!loading && "No topics found"}
         >
           {(topic) => (
@@ -258,7 +270,7 @@ export default function TableTopicManager() {
                       setIsConfirmOpen(true);
                     }}
                   >
-                    <DeleteIcon />
+                    <DeleteIcon className="text-[16px]" />
                   </Button>
                 </div>
               </TableCell>

@@ -1,6 +1,12 @@
 "use client";
 
-import { Button, NumberInput, Select, SelectItem } from "@heroui/react";
+import {
+  Button,
+  NumberInput,
+  Select,
+  SelectItem,
+  Spinner,
+} from "@heroui/react";
 import React, { useState, useEffect } from "react";
 import { topicService } from "@/api/topic";
 import { projectService } from "@/api/project";
@@ -27,6 +33,7 @@ const FormGenerateTopic: React.FC<FormGenerateTopicProps> = ({
   const [quantities, setQuantities] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadingState, setLoadingState] = useState<string>("idle"); // idle, fetching, generating
   const [errors, setErrors] = useState<{
     projectName?: string;
     quantities?: string;
@@ -37,6 +44,7 @@ const FormGenerateTopic: React.FC<FormGenerateTopicProps> = ({
     const fetchProjects = async () => {
       try {
         setIsLoading(true);
+        setLoadingState("fetching");
         const apiKey = getNimorKey();
         if (!apiKey) return;
 
@@ -72,11 +80,11 @@ const FormGenerateTopic: React.FC<FormGenerateTopicProps> = ({
       quantities?: string;
     } = {};
 
-    if (!projectName) {
+    if (!projectName || projectName.trim() === "") {
       newErrors.projectName = "Project name is required";
     }
 
-    if (quantities < 1 || quantities > 100) {
+    if (!quantities || quantities < 1 || quantities > 100) {
       newErrors.quantities = "Must be between 1 and 100";
     }
 
@@ -135,23 +143,36 @@ const FormGenerateTopic: React.FC<FormGenerateTopicProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 relative">
       <div className="space-y-4">
         <Select
           label="Project Name"
           placeholder="Select project"
-          selectedKeys={[projectName]}
+          selectedKeys={projectName ? [projectName] : []}
           onSelectionChange={(keys) => {
             const selected = Array.from(keys)[0] as string;
             setProjectName(selected);
+            // Clear the error when a project is selected
+            if (selected && errors.projectName) {
+              setErrors((prev) => ({ ...prev, projectName: undefined }));
+            }
           }}
           errorMessage={errors.projectName}
           isInvalid={!!errors.projectName}
         >
           {isLoading ? (
-            <SelectItem key="loading">Loading projects...</SelectItem>
+            <SelectItem key="loading" textValue="Loading projects...">
+              <div className="flex items-center gap-2">
+                <Spinner size="md" />
+                <span>Loading projects...</span>
+              </div>
+            </SelectItem>
           ) : projects.length === 0 ? (
-            <SelectItem key="no-projects">No projects available</SelectItem>
+            <SelectItem key="no-projects" textValue="No projects available">
+              <div className="flex items-center gap-2 text-gray-500">
+                <span>No projects available</span>
+              </div>
+            </SelectItem>
           ) : (
             projects.map((project) => (
               <SelectItem key={project.key}>{project.label}</SelectItem>
@@ -163,7 +184,14 @@ const FormGenerateTopic: React.FC<FormGenerateTopicProps> = ({
           label="Number of Topics"
           placeholder="How many topics to generate"
           value={quantities}
-          onValueChange={(value) => setQuantities(Number(value))}
+          onValueChange={(value) => {
+            const numValue = Number(value);
+            setQuantities(numValue);
+            // Clear error if value is now valid
+            if (numValue >= 1 && numValue <= 100 && errors.quantities) {
+              setErrors((prev) => ({ ...prev, quantities: undefined }));
+            }
+          }}
           min={1}
           max={10}
           errorMessage={errors.quantities}

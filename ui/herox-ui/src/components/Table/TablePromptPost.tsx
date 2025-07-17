@@ -18,7 +18,6 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-  Tooltip,
   useDisclosure,
   Select,
   SelectItem,
@@ -288,22 +287,24 @@ export default function TablePromptPost() {
       case "actions":
         return (
           <div className="relative flex items-center gap-2">
-            <Tooltip content="Edit">
-              <span
-                className="text-lg text-default-400 cursor-pointer active:opacity-50"
-                onClick={() => handleEditPrompt(item._id)}
-              >
-                <EditIcon />
-              </span>
-            </Tooltip>
-            <Tooltip color="danger" content="Delete">
-              <span
-                className="text-lg text-danger cursor-pointer active:opacity-50"
-                onClick={() => handleDeletePrompt(item._id)}
-              >
-                <DeleteIcon />
-              </span>
-            </Tooltip>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              color="default"
+              onPress={() => handleEditPrompt(item._id)}
+            >
+              <EditIcon className="text-[16px]" />
+            </Button>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              color="danger"
+              onPress={() => handleDeletePrompt(item._id)}
+            >
+              <DeleteIcon className="text-[16px]" />
+            </Button>
           </div>
         );
       default:
@@ -394,10 +395,7 @@ export default function TablePromptPost() {
       <Table aria-label="Prompt table" isHeaderSticky isStriped removeWrapper>
         <TableHeader columns={columns}>
           {(column) => (
-            <TableColumn
-              key={column.uid}
-              align={column.uid === "actions" ? "center" : "start"}
-            >
+            <TableColumn key={column.uid} align="start">
               {column.name}
             </TableColumn>
           )}

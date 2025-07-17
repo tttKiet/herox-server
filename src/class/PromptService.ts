@@ -81,7 +81,6 @@ class PromptService {
         .sort({ createdAt: -1 })
         .toArray();
 
-      logger.success(`Fetched ${prompts.length} prompt(s)`);
       return prompts;
     } catch (error: any) {
       logger.error("Failed to fetch prompts:", error?.message);

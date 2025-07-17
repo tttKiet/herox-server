@@ -1,8 +1,8 @@
 import { ObjectId } from "mongodb";
 
 export interface IPostReg {
-  userMessage: string;
-  folderName: string;
+  tagName: string;
+  projectName: string;
 }
 
 export interface IPost {

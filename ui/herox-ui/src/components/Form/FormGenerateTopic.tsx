@@ -33,7 +33,6 @@ const FormGenerateTopic: React.FC<FormGenerateTopicProps> = ({
   const [quantities, setQuantities] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [loadingState, setLoadingState] = useState<string>("idle"); // idle, fetching, generating
   const [errors, setErrors] = useState<{
     projectName?: string;
     quantities?: string;
@@ -44,7 +43,6 @@ const FormGenerateTopic: React.FC<FormGenerateTopicProps> = ({
     const fetchProjects = async () => {
       try {
         setIsLoading(true);
-        setLoadingState("fetching");
         const apiKey = getNimorKey();
         if (!apiKey) return;
 

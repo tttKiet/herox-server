@@ -124,11 +124,9 @@ class XHandler {
   };
 
   public reupPost: RequestHandler<IPostReg> = async function (req, res) {
-    const { userMessage, folderName, apiKey } = req.body;
+    const { tagName, projectName, apiKey } = req.body;
 
-    if (!userMessage || !folderName) {
-      console.log("Missing parameters body: ", req.body);
-
+    if (!tagName || !projectName) {
       res.status(400).json({
         ok: false,
         message: "Missing parameters body!",
@@ -158,14 +156,11 @@ class XHandler {
         },
       });
 
-      createPost(
-        {
-          insertedId,
-          userMessage,
-          folderName,
-        },
-        apiKey
-      );
+      createPost({
+        insertedId,
+        projectName,
+        tagName,
+      });
       return;
     } catch (err: any) {
       console.error("Error:", err.message);
@@ -419,21 +414,19 @@ interface ICreatePostImg extends IPostReg {
   insertedId: ObjectId;
 }
 
-async function createPost(
-  { userMessage, insertedId, folderName }: ICreatePostImg,
-  apikey: string
-) {
+async function createPost({
+  tagName,
+  insertedId,
+  projectName,
+}: ICreatePostImg) {
   const n8nHelper = new N8nHelper();
   const postsCol = getCollection<IPost>("posts");
 
   try {
-    const renderResp = await n8nHelper.startRepostImage(
-      {
-        userMessage,
-        folderName,
-      },
-      apikey
-    );
+    const renderResp = await n8nHelper.startRepostImage({
+      tagName,
+      projectName,
+    });
 
     let updateFields: Partial<IPost>;
 
@@ -441,7 +434,7 @@ async function createPost(
       updateFields = {
         status: "success",
         localPath: "",
-        content: renderResp.data.post,
+        content: renderResp.data,
         imageUrl: "",
         updatedAt: new Date(),
       };

@@ -2,6 +2,7 @@ import "dotenv/config";
 import { IPostReg } from "../utils/interfaces";
 import { logger } from "../utils/logger";
 import PromptService from "./PromptService";
+import TopicManager from "./TopicManager";
 import axios from "axios";
 
 const API_N8N_CREATE_POST_AGENT = process.env.API_N8N_HELPER_REUP_POST_IMG_PRO;
@@ -26,13 +27,11 @@ if (!API_N8N_GENERATOR_TOPIC) {
 }
 
 const promptService = new PromptService();
+const topicManager = new TopicManager();
 
 export interface IResN8nPost {
   ok: boolean;
-  data: {
-    post: string;
-    imageUrl: string;
-  };
+  data: string;
 }
 
 export interface IRespN8nAi {
@@ -52,26 +51,31 @@ export interface IRespN8nGeneratorTopic {
 
 class N8nHelper {
   constructor() {}
-
-  async startRepostImage(
-    { userMessage, folderName }: Partial<IPostReg>,
-    apiKey: string
-  ) {
+  async startRepostImage({ projectName, tagName }: Partial<IPostReg>) {
     try {
-      const promptPostPicked = await promptService.pickPrompt({
-        type: "PROMPT_POST",
-        memberId: apiKey,
+      if (!projectName) {
+        logger.error("Project name is required for reposting image");
+        return null;
+      }
+
+      // Lấy random topic cho projectName
+      const randomTopic = await topicManager.getRandomTopicEfficient({
+        projectName: projectName,
       });
+
+      if (!randomTopic) {
+        logger.error(`No random topic found for project ${projectName}`);
+        return null;
+      }
+      // Lấy tên của topic nếu có, nếu không thì sử dụng tagName
+      const topicName = randomTopic.topicName;
+
+      const userMessage = `${projectName}<>${topicName}<>${tagName}`;
 
       const resp = await axios.post(
         API_N8N_CREATE_POST_AGENT!,
         {
           userMessage: userMessage,
-          folderName,
-          prompt: {
-            post: promptPostPicked.context,
-            image: "",
-          },
         },
         {
           headers: {
@@ -82,7 +86,7 @@ class N8nHelper {
       const res: IResN8nPost = resp.data;
       return res;
     } catch (error: any) {
-      console.log(error);
+      // console.log(error);
       logger.error(error?.message);
       return null;
     }
@@ -113,6 +117,29 @@ class N8nHelper {
 
   async generatorTopic(data: IRespN8nGeneratorTopic, apiKey: string) {
     try {
+      // Lấy danh sách topic hiện có từ database nếu existingTopics trống
+      if (!data.existingTopics || data.existingTopics.length === 0) {
+        try {
+          const topics = await topicManager.getTopicsByProject({
+            projectName: data.projectName,
+            apiKey,
+            limit: 100, // Lấy tối đa 100 topic hiện có
+          });
+
+          if (topics && topics.data && topics.data.length > 0) {
+            // Lấy tên các topic hiện có
+            data.existingTopics = topics.data.map((topic) => topic.topicName);
+            logger.info(
+              `Found ${data.existingTopics.length} existing topics for project: ${data.projectName}`
+            );
+          }
+        } catch (err) {
+          logger.error(`Error fetching existing topics: ${err}`);
+          // Tiếp tục với mảng rỗng nếu có lỗi
+          data.existingTopics = [];
+        }
+      }
+
       const resp = await axios.post(API_N8N_GENERATOR_TOPIC!, data, {
         headers: {
           "Content-Type": "Application/json",

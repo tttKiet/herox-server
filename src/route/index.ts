@@ -14,6 +14,7 @@ const authHandler = new AuthHandler();
 const mainRouter = Router();
 
 // ai
+mainRouter.get("/api/v1/ai/chat/:chatId", aiHandler.getChat);
 mainRouter.post("/api/v1/ai/chat", aiHandler.chatResp);
 
 // drawer

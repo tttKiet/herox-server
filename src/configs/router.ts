@@ -1,8 +1,8 @@
 import { Application } from "express-serve-static-core";
-import drawerRouter from "../route";
+import mainRouter from "../route";
 
 async function setupRouter(app: Application) {
-  app.use(drawerRouter);
+  app.use(mainRouter);
 }
 
 export default setupRouter;

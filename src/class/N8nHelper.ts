@@ -4,10 +4,13 @@ import { logger } from "../utils/logger";
 import PromptService from "./PromptService";
 import TopicManager from "./TopicManager";
 import axios from "axios";
+// GeminiDirectApi được import động trong function để tránh circular dependency
 
 const API_N8N_CREATE_POST_AGENT = process.env.API_N8N_HELPER_REUP_POST_IMG_PRO;
 const API_N8N_CHAT_REPLY_WITH_AGENT =
   process.env.API_N8N_HELPER_CHAT_REPLY_WITH_AGENT;
+// Thêm URL trực tiếp không qua Cloudflare nếu được cấu hình
+const API_N8N_CHAT_REPLY_DIRECT = process.env.API_N8N_HELPER_CHAT_REPLY_DIRECT;
 
 const API_N8N_GENERATOR_TOPIC = process.env.API_N8N_HELPER_GENERATOR_TOPIC;
 
@@ -16,9 +19,12 @@ if (!API_N8N_CREATE_POST_AGENT) {
   throw new Error("API_N8N_CREATE_POST_AGENT is not defined in .env");
 }
 
-if (!API_N8N_CHAT_REPLY_WITH_AGENT) {
-  logger.error("API_N8N_CHAT_REPLY_WITH_AGENT is not defined in .env");
-  throw new Error("API_N8N_CHAT_REPLY_WITH_AGENT is not defined in .env");
+// Kiểm tra xem có ít nhất một trong hai URL N8N (qua Cloudflare hoặc trực tiếp)
+if (!API_N8N_CHAT_REPLY_WITH_AGENT && !API_N8N_CHAT_REPLY_DIRECT) {
+  logger.error(
+    "Không có URL cho N8N API (cả Cloudflare và trực tiếp đều không được định nghĩa)"
+  );
+  throw new Error("Cần cấu hình ít nhất một URL N8N API trong .env");
 }
 
 if (!API_N8N_GENERATOR_TOPIC) {
@@ -81,6 +87,8 @@ class N8nHelper {
           headers: {
             "Content-Type": "Application/json",
           },
+          timeout: 55000, // 55 giây - ngắn hơn 60s của Cloudflare/Nginx
+          maxRedirects: 5,
         }
       );
       const res: IResN8nPost = resp.data;
@@ -93,25 +101,64 @@ class N8nHelper {
   }
 
   async chatReplyWithAgent({ userMessage }: IRespN8nChatReply, apiKey: string) {
+    // Cấu hình options chung cho axios
+    const axiosOptions = {
+      headers: {
+        "Content-Type": "Application/json",
+      },
+      timeout: 200000,
+    };
+
+    // Dữ liệu gửi đi
+    const requestData = {
+      userMessage: userMessage,
+    };
+
     try {
-      const resp = await axios.post(
-        API_N8N_CHAT_REPLY_WITH_AGENT!,
-        {
-          userMessage: userMessage,
-        },
-        {
-          headers: {
-            "Content-Type": "Application/json",
-          },
-        }
-      );
+      const apiUrl = API_N8N_CHAT_REPLY_WITH_AGENT!;
+
+      const resp = await axios.post(apiUrl, requestData, axiosOptions);
+
+      logger.info(`Received response from N8N API with status: ${resp.status}`);
       const resData: IRespN8nAi = resp.data;
+
+      if (!resData || !resData.data) {
+        logger.warn(
+          `N8N API returned empty response: ${JSON.stringify(resData)}`
+        );
+        throw new Error("Empty response from Cloudflare N8N API");
+      }
 
       return resData;
     } catch (error: any) {
-      console.log(error);
-      logger.error(error?.message);
-      return null;
+      // Log chi tiết lỗi
+      logger.error(`N8N Chat Reply Error: ${error?.message}`);
+
+      // Log thêm chi tiết lỗi để debug
+      if (error.response) {
+        // Lỗi với response từ server
+        logger.error(`N8N API Error Status: ${error.response.status}`);
+        logger.error(
+          `N8N API Error Data: ${JSON.stringify(error.response.data)}`
+        );
+      } else if (error.request) {
+        // Lỗi không nhận được response
+        logger.error(
+          `N8N API Timeout/Network Error: Request was made but no response was received`
+        );
+
+        // Log chi tiết timeout để biết thêm thông tin
+        if (error.code === "ECONNABORTED") {
+          logger.error("Connection aborted due to timeout");
+        } else if (error.code === "ETIMEDOUT") {
+          logger.error("Connection timed out");
+        }
+      } else {
+        // Lỗi khác khi setup request
+        logger.error(`N8N API Request Setup Error: ${error.message}`);
+      }
+
+      throw error;
     }
   }
 
@@ -123,15 +170,12 @@ class N8nHelper {
           const topics = await topicManager.getTopicsByProject({
             projectName: data.projectName,
             apiKey,
-            limit: 100, // Lấy tối đa 100 topic hiện có
+            limit: 1000, // Lấy tối đa 1000 topic hiện có
           });
 
           if (topics && topics.data && topics.data.length > 0) {
             // Lấy tên các topic hiện có
             data.existingTopics = topics.data.map((topic) => topic.topicName);
-            logger.info(
-              `Found ${data.existingTopics.length} existing topics for project: ${data.projectName}`
-            );
           }
         } catch (err) {
           logger.error(`Error fetching existing topics: ${err}`);
@@ -144,8 +188,7 @@ class N8nHelper {
         headers: {
           "Content-Type": "Application/json",
         },
-        // Increase timeout to 5 minutes since AI generation can take longer
-        timeout: 300000, // 5 minutes in milliseconds
+        timeout: 200000, // 200 giây
       });
       const resData: {
         ok: boolean;

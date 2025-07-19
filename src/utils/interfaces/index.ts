@@ -17,6 +17,18 @@ export interface IPost {
   updatedAt: Date;
 }
 
+export interface IChat {
+  _id?: ObjectId;
+  memberId: string | ObjectId;
+  status: "pending" | "error" | "success";
+  userMessage: string;
+  aiContent?: string;
+  promptId?: string;
+  message?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface IUserInteractPost {
   _id?: ObjectId;
   action?: "commented" | "liked" | null | undefined;

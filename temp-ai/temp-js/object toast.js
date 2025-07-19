@@ -666,33 +666,22 @@ toast.update = (id, message, data = null, title = null, options = {}) => {
 };
 
 //  show toast data
-const perAction = Number.parseFloat("$perAction") * 100 + "%";
-const rdValue = Number.parseFloat("$rdValue") * 100 + "%";
 
-const text =
-  perAction > rdValue
-    ? "Thực hiện action lướt feed"
-    : "Không thực hiện action lướt feed";
-
-const data = {
-  "Tỷ lệ lướt feed": perAction,
-  "Tỷ lệ random được": rdValue,
-};
-
-// toast.permanent(text, data, "Nimo server", {
-//   id: "server-status",
-//   width: "400px",
-//   maxHeight: "250px",
-//   type: "info", // Can be: 'error', 'success', 'info', 'warning',
-//   //   timeout: 5000,
-// });
-
-// // Example of a truly permanent toast (default)
-// const textNotification = "$msg";
+const text = "Note";
+const data = "Chuẩn bị post bài";
 toast.permanent(text, data, "Nimo server", {
-  id: "notification",
+  id: "server-status",
   width: "400px",
   maxHeight: "250px",
   type: "info", // Can be: 'error', 'success', 'info', 'warning',
-  timeout: 5000,
+  //   timeout: 5000,
 });
+
+// // Example of a truly permanent toast (default)
+// toast.permanent(text, data, "Nimo server", {
+//   id: "notification",
+//   width: "400px",
+//   maxHeight: "250px",
+//   type: "info", // Can be: 'error', 'success', 'info', 'warning',
+//   //   timeout: 6000,
+// });

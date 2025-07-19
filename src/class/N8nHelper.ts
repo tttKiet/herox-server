@@ -119,7 +119,6 @@ class N8nHelper {
 
       const resp = await axios.post(apiUrl, requestData, axiosOptions);
 
-      logger.info(`Received response from N8N API with status: ${resp.status}`);
       const resData: IRespN8nAi = resp.data;
 
       if (!resData || !resData.data) {

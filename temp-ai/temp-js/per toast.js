@@ -666,17 +666,12 @@ toast.update = (id, message, data = null, title = null, options = {}) => {
 };
 
 //  show toast data
-const perAction = Number.parseFloat("$perAction") * 100 + "%";
-const rdValue = Number.parseFloat("$rdValue") * 100 + "%";
+const chatId = "$chatId";
 
-const text =
-  perAction > rdValue
-    ? "Thực hiện action lướt feed"
-    : "Không thực hiện action lướt feed";
+const text = "Đã tạo chat";
 
 const data = {
-  "Tỷ lệ lướt feed": perAction,
-  "Tỷ lệ random được": rdValue,
+  chatId: chatId,
 };
 
 // toast.permanent(text, data, "Nimo server", {
@@ -694,5 +689,5 @@ toast.permanent(text, data, "Nimo server", {
   width: "400px",
   maxHeight: "250px",
   type: "info", // Can be: 'error', 'success', 'info', 'warning',
-  timeout: 5000,
+  // timeout: 12000,
 });

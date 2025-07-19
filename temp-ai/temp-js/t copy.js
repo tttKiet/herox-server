@@ -667,16 +667,16 @@ toast.update = (id, message, data = null, title = null, options = {}) => {
 
 //  show toast data
 const perAction = Number.parseFloat("$perAction") * 100 + "%";
-const rdValue = Number.parseFloat("$rdValue") * 100 + "%";
+const randomValue = Number.parseFloat("$randomValue") * 100 + "%";
 
 const text =
-  perAction > rdValue
-    ? "Thực hiện action lướt feed"
-    : "Không thực hiện action lướt feed";
+  perAction > randomValue
+    ? "Thực hiện action reply"
+    : "Không thực hiện action reply";
 
 const data = {
-  "Tỷ lệ lướt feed": perAction,
-  "Tỷ lệ random được": rdValue,
+  "Tỷ lệ reply": perAction,
+  "Tỷ lệ random được": randomValue,
 };
 
 // toast.permanent(text, data, "Nimo server", {

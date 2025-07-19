@@ -69,7 +69,7 @@ services:
       - .env
     environment:
       - NODE_ENV=production
-      - LOG_DEBUG=true
+      - LOG_DEBUG=false
     restart: unless-stopped
     volumes:
       - ./assets:/app/assets

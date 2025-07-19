@@ -264,8 +264,6 @@ async function createChatHistory(
  */
 async function processChatRequest(chat: IChat, apiKey: string): Promise<void> {
   try {
-    logger.info(`Processing chat request ${chat._id} for user ${apiKey}`);
-
     // Gọi API của n8n để xử lý
     const resp = await n8nHelper.chatReplyWithAgent(
       { userMessage: chat.userMessage },
@@ -285,10 +283,7 @@ async function processChatRequest(chat: IChat, apiKey: string): Promise<void> {
           },
         }
       );
-      logger.info(`Chat request ${chat._id} processed successfully`);
     } else {
-      console.log("Response from n8n:", resp);
-
       // Cập nhật document với trạng thái lỗi
       const chatCollection = getCollection<IChat>("chats");
       await chatCollection.updateOne(

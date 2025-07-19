@@ -440,5 +440,93 @@ async function main() {
   }
 }
 
+/**
+ * Xóa tất cả toast notifications khỏi DOM
+ * @param {boolean} removeContainer - Có xóa container không (mặc định: false)
+ */
+function removeAllToasts(removeContainer = false) {
+  try {
+    // Tìm tất cả các toast containers trên trang
+    const containers = document.querySelectorAll("#toast-container");
+
+    if (containers.length === 0) {
+      console.log("Không tìm thấy toast nào để xóa.");
+      return;
+    }
+
+    let totalRemoved = 0;
+
+    containers.forEach((container) => {
+      // Lấy tất cả toasts trong container
+      const toasts = container.querySelectorAll(".toast");
+      totalRemoved += toasts.length;
+
+      // Xóa từng toast với animation
+      toasts.forEach((toast) => {
+        toast.style.animation = "toast-out 0.3s forwards";
+
+        // Xóa toast sau khi animation hoàn thành
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      });
+
+      // Xóa container nếu được yêu cầu
+      if (removeContainer) {
+        setTimeout(() => {
+          if (container.parentNode) {
+            container.parentNode.removeChild(container);
+          }
+        }, 350); // Đợi lâu hơn animation của toasts một chút
+      }
+    });
+
+    console.log(`Đã xóa ${totalRemoved} toast notifications.`);
+    if (removeContainer) {
+      console.log("Container cũng đã bị xóa.");
+    }
+  } catch (error) {
+    console.error("Lỗi khi xóa toast:", error);
+  }
+}
+
+/**
+ * Xóa một toast cụ thể theo ID
+ * @param {string} id - ID của toast cần xóa
+ */
+function removeToastById(id) {
+  try {
+    const toast = document.querySelector(`[data-toast-id="${id}"]`);
+
+    if (!toast) {
+      console.log(`Không tìm thấy toast với ID: ${id}`);
+      return;
+    }
+
+    // Xóa toast với animation
+    toast.style.animation = "toast-out 0.3s forwards";
+
+    // Xóa toast sau khi animation hoàn thành
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+        console.log(`Đã xóa toast với ID: ${id}`);
+      }
+    }, 300);
+  } catch (error) {
+    console.error(`Lỗi khi xóa toast với ID ${id}:`, error);
+  }
+}
+
+// Make the functions available globally
+if (typeof window !== "undefined") {
+  window.removeAllToasts = removeAllToasts;
+  window.removeToastById = removeToastById;
+}
+
 // Chạy chương trình
 main();
+
+// remove toast

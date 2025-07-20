@@ -674,10 +674,10 @@ toast.update = (id, message, data = null, title = null, options = {}) => {
 //     ? "Thực hiện action thông báo"
 //     : "Không thực hiện action thông báo";
 
-// const data = {
-//   "Tỷ lệ thông báo": perAction,
-//   "Tỷ lệ random được": randomValue,
-// };
+const data = {
+  "Khoảng rd dòng for": "$rangeStr",
+  "Số dòng random được": "$countForFullActions",
+};
 
 // toast.permanent(text, data, "Nimo server", {
 //   id: "server-status",
@@ -688,10 +688,9 @@ toast.update = (id, message, data = null, title = null, options = {}) => {
 // });
 
 // // Example of a truly permanent toast (default)
-const textNotification = "$msg";
-toast.permanent(textNotification, null, "Notification", {
-  id: "no-data-example",
+const textNotification = "Smooth";
+toast.permanent(textNotification, data, "Nimo Server", {
+  id: "server-status",
   width: "400px",
   type: "info",
-  timeout: 12000,
 });

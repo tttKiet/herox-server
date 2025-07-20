@@ -17,7 +17,7 @@ export interface IBodyChatRespDeepseek {
     { role: "user"; content: string }
   ];
   stream: false;
-  model: "deepseek-chat";
+  model: "deepseek-reasoner" | "deepseek-chat";
 }
 
 async function fetchAIDeepseek(
@@ -107,52 +107,49 @@ class AiHandler {
       try {
         // Chọn provider dựa vào chatKey
         if (isDeepSeekAPIKey(chatKey)) {
-          // DeepSeek - xử lý đồng bộ
-          const promptCmtPicked = await promptService.pickPrompt({
-            type: "PROMPT_CMT",
-            memberId: apiKey,
-          });
-          const promptCmt = promptCmtPicked.context;
-          const respAi = await fetchAIDeepseek(chatKey, {
-            messages: [
-              {
-                role: "system",
-                content: promptCmt + "\n" + systemMessage,
-              },
-              { role: "user", content: userMessage },
-            ],
-            stream: false,
-            model: "deepseek-chat",
-          });
+          // DeepSeek - Xử lý bất đồng bộ tương tự AI agent
+          const chatDoc = await createChatHistory({ userMessage }, apiKey);
 
-          // Trả về phản hồi đồng bộ
+          // Trả về document với trạng thái pending cho client
           res.status(200).json({
             ok: true,
-            message: "Chat response received successfully!",
-            data: respAi,
+            message: "DeepSeek chat request queued successfully!",
+            data: chatDoc,
           });
+
+          // Xử lý request bất đồng bộ
+          processDeepSeekRequest(chatDoc, apiKey, chatKey, systemMessage).catch(
+            (err) => {
+              logger.error(
+                `Error processing DeepSeek chat request ${chatDoc._id}: ${err.message}`
+              );
+            }
+          );
+
           return;
         } else if (isGeminiAPIKey(chatKey)) {
-          // Gemini - xử lý đồng bộ
-          const gemini = new GeminiAI(chatKey);
-          // Có thể dùng promptCmt nếu muốn, hoặc chỉ systemMessage
-          const promptCmtPicked = await promptService.pickPrompt({
-            type: "PROMPT_CMT",
-            memberId: apiKey,
-          });
-          const promptCmt = promptCmtPicked.context;
-          const sysMsg = promptCmt + "\n" + (systemMessage || "");
-          const respAi = await gemini.chat(userMessage, sysMsg);
+          // Gemini - Xử lý bất đồng bộ tương tự AI agent
+          const chatDoc = await createChatHistory({ userMessage }, apiKey);
 
-          // Trả về phản hồi đồng bộ
+          // Trả về document với trạng thái pending cho client
           res.status(200).json({
             ok: true,
-            message: "Chat response received successfully!",
-            data: respAi,
+            message: "Gemini chat request queued successfully!",
+            data: chatDoc,
           });
+
+          // Xử lý request bất đồng bộ
+          processGeminiRequest(chatDoc, apiKey, chatKey, systemMessage).catch(
+            (err) => {
+              logger.error(
+                `Error processing Gemini chat request ${chatDoc._id}: ${err.message}`
+              );
+            }
+          );
+
           return;
         } else if (!chatKey || chatKey == "" || chatKey == "nimo-ai-server") {
-          // Xử lý bất đồng bộ - tạo document chat mới với trạng thái pending
+          // Xử lý bởi AI agent
           const chatDoc = await createChatHistory({ userMessage }, apiKey);
 
           // Trả về document với trạng thái pending cho client
@@ -162,7 +159,7 @@ class AiHandler {
             data: chatDoc,
           });
 
-          // Xử lý bất đồng bộ sau khi đã trả response cho client
+          // Xử lý bởi agent n8n, gọi AI agent và cập nhât kết quả
           processChatRequest(chatDoc, apiKey).catch((err) => {
             logger.error(
               `Error processing chat request ${chatDoc._id}: ${err.message}`
@@ -260,6 +257,70 @@ async function createChatHistory(
 }
 
 /**
+ * Xử lý yêu cầu DeepSeek bất đồng bộ
+ */
+async function processDeepSeekRequest(
+  chat: IChat,
+  apiKey: string,
+  chatKey: string,
+  systemMessage?: string
+): Promise<void> {
+  try {
+    const chatCollection = getCollection<IChat>("chats");
+
+    // Lấy prompt từ service
+    const promptCmtPicked = await promptService.pickPrompt({
+      type: "PROMPT_CMT",
+      memberId: apiKey,
+    });
+    const promptCmt = promptCmtPicked.context;
+
+    // Gọi DeepSeek API
+    const respAi = await fetchAIDeepseek(chatKey, {
+      messages: [
+        {
+          role: "system",
+          content: promptCmt + "\n" + (systemMessage || ""),
+        },
+        { role: "user", content: chat.userMessage },
+      ],
+      stream: false,
+      model: "deepseek-reasoner",
+    });
+
+    // Cập nhật document với kết quả thành công
+    await chatCollection.updateOne(
+      { _id: chat._id },
+      {
+        $set: {
+          status: "success",
+          aiContent: respAi,
+          updatedAt: new Date(),
+          provider: "deepseek",
+        },
+      }
+    );
+  } catch (error: any) {
+    // Cập nhật document với trạng thái lỗi
+    const chatCollection = getCollection<IChat>("chats");
+    await chatCollection.updateOne(
+      { _id: chat._id },
+      {
+        $set: {
+          status: "error",
+          message: error.message || "DeepSeek error occurred",
+          updatedAt: new Date(),
+          provider: "deepseek",
+        },
+      }
+    );
+    logger.error(
+      `Error processing DeepSeek chat request ${chat._id}: ${error.message}`
+    );
+  }
+}
+
+/**
  * Xử lý yêu cầu chat bất đồng bộ
  */
 async function processChatRequest(chat: IChat, apiKey: string): Promise<void> {
@@ -280,6 +341,7 @@ async function processChatRequest(chat: IChat, apiKey: string): Promise<void> {
             status: "success",
             aiContent: resp.data,
             updatedAt: new Date(),
+            provider: "nimo-ai-server",
           },
         }
       );
@@ -293,6 +355,7 @@ async function processChatRequest(chat: IChat, apiKey: string): Promise<void> {
             status: "error",
             message: "Failed to get AI response",
             updatedAt: new Date(),
+            provider: "nimo-ai-server",
           },
         }
       );
@@ -310,10 +373,69 @@ async function processChatRequest(chat: IChat, apiKey: string): Promise<void> {
           status: "error",
           message: error.message || "Unknown error occurred",
           updatedAt: new Date(),
+          provider: "nimo-ai-server",
         },
       }
     );
     logger.error(`Error processing chat request ${chat._id}: ${error.message}`);
+  }
+}
+
+/**
+ * Xử lý yêu cầu Gemini bất đồng bộ
+ */
+async function processGeminiRequest(
+  chat: IChat,
+  apiKey: string,
+  chatKey: string,
+  systemMessage?: string
+): Promise<void> {
+  try {
+    const chatCollection = getCollection<IChat>("chats");
+
+    // Khởi tạo Gemini client
+    const gemini = new GeminiAI(chatKey);
+
+    // Lấy prompt từ service
+    const promptCmtPicked = await promptService.pickPrompt({
+      type: "PROMPT_CMT",
+      memberId: apiKey,
+    });
+    const promptCmt = promptCmtPicked.context;
+    const sysMsg = promptCmt + "\n" + (systemMessage || "");
+
+    // Gọi Gemini API
+    const respAi = await gemini.chat(chat.userMessage, sysMsg);
+
+    // Cập nhật document với kết quả thành công
+    await chatCollection.updateOne(
+      { _id: chat._id },
+      {
+        $set: {
+          status: "success",
+          aiContent: respAi,
+          updatedAt: new Date(),
+          provider: "gemini",
+        },
+      }
+    );
+  } catch (error: any) {
+    // Cập nhật document với trạng thái lỗi
+    const chatCollection = getCollection<IChat>("chats");
+    await chatCollection.updateOne(
+      { _id: chat._id },
+      {
+        $set: {
+          status: "error",
+          message: error.message || "Gemini error occurred",
+          updatedAt: new Date(),
+          provider: "gemini",
+        },
+      }
+    );
+    logger.error(
+      `Error processing Gemini chat request ${chat._id}: ${error.message}`
+    );
   }
 }
 

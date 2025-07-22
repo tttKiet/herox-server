@@ -8,6 +8,7 @@ import {
   HiFolderOpen,
   HiOutlineChatBubbleBottomCenterText,
 } from "react-icons/hi2";
+import { RiTwitterXFill } from "react-icons/ri";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -53,6 +54,11 @@ const navBarLeft: MenuProps["items"] = [
         icon: <HiOutlineChatBubbleBottomCenterText />,
         key: "CHAT_RESPONSE",
       },
+      {
+        label: <Link href="/interact-posts">Interact Posts</Link>,
+        icon: <RiTwitterXFill />,
+        key: "INTERACT_POSTS",
+      },
     ],
   },
 ];
@@ -70,6 +76,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     if (pathname.startsWith("/topic")) return ["TOPIC"];
     if (pathname.startsWith("/project")) return ["PROJECT"];
     if (pathname.startsWith("/chat-response")) return ["CHAT_RESPONSE"];
+    if (pathname.startsWith("/interact-posts")) return ["INTERACT_POSTS"];
     return [];
   };
 

@@ -5,6 +5,7 @@ import ManagerHandler from "../app/handler/manager";
 import AiHandler from "../app/handler/ai";
 import AuthHandler from "../app/handler/auth/auth.index";
 import ChatHandler from "../app/handler/ai/chats";
+import InteractPostHandler from "../app/handler/x/interactPosts";
 
 const xHandler = new XHandler();
 const aiHandler = new AiHandler();
@@ -12,6 +13,7 @@ const adminHandler = new AdminHandler();
 const managerHandler = new ManagerHandler();
 const authHandler = new AuthHandler();
 const chatHandler = new ChatHandler();
+const interactPostHandler = new InteractPostHandler();
 
 const mainRouter = Router();
 
@@ -32,6 +34,10 @@ mainRouter.post(
 // check post interact
 mainRouter.post("/api/v1/x/save-interact-post", xHandler.saveLinkInteract);
 mainRouter.post("/api/v1/x/check-interact-post", xHandler.checkLinkInteract);
+mainRouter.get(
+  "/api/v1/x/interact-posts",
+  interactPostHandler.getInteractPosts
+);
 
 // admin
 mainRouter.post(

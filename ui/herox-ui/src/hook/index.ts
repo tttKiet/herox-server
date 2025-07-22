@@ -13,6 +13,12 @@ export function saveNimorKey(key: string) {
   }
 }
 
+export function setNimorKey(key: string) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(NIMOR_KEY, key);
+  }
+}
+
 export interface NimorData {
   _id: string;
   permisson: string;

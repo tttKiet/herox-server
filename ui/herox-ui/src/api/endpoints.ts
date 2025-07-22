@@ -7,4 +7,5 @@ export const TOPIC_GENERATOR_API = "/api/v1/topic/generator";
 export const PROJECT_API = "/api/v1/project";
 export const CHAT_API = "/api/v1/ai/chats";
 export const ADMIN_MEMBERS_API = "/api/v1/admin/members";
+export const INTERACT_POSTS_API = "/api/v1/x/interact-posts";
 // Thêm các API endpoint khác tại đây nếu cần

@@ -30,7 +30,7 @@ async function fetchAIDeepseek(
   retryCount = 0
 ): Promise<string> {
   const maxRetries = 2;
-  const timeoutMs = 60000; // 60 seconds
+  const timeoutMs = 400000; // 400 seconds
 
   try {
     const res = await axios.post(
@@ -54,7 +54,6 @@ async function fetchAIDeepseek(
       console.log("Error ----------------------------------:");
       console.log("Body: ", { apiKey, body });
 
-      console.log("resp ---------------------------- :", resp);
       if (resp?.error) {
         console.log("error message:", resp.error.message);
         console.log("error type:", resp.error.type);

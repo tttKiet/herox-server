@@ -45,6 +45,8 @@ const columns = [
   { name: "AI Response", uid: "aiContent" },
   { name: "Member", uid: "memberId" },
   { name: "Status", uid: "status" },
+  { name: "Error Message", uid: "message" },
+  { name: "Provider", uid: "provider" },
   { name: "Created At", uid: "createdAt" },
 ];
 
@@ -62,9 +64,13 @@ export default function TableChatManager() {
   const [filterMemberId, setFilterMemberId] = useState<string>("");
   const [filterUserMessage, setFilterUserMessage] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const [filterProvider, setFilterProvider] = useState<string>("");
   const [filterStartDate, setFilterStartDate] = useState<string>("");
   const [filterEndDate, setFilterEndDate] = useState<string>("");
   const [memberList, setMemberList] = useState<
+    { key: string; label: string }[]
+  >([]);
+  const [providerList, setProviderList] = useState<
     { key: string; label: string }[]
   >([]);
 
@@ -73,39 +79,48 @@ export default function TableChatManager() {
 
   // Fetch members for filter dropdown
   const fetchMembers = useCallback(async () => {
-    // This would ideally be an API call to get all members/admins
-    // For now, we'll populate it from the chat data we get
     try {
       const apiKey = getNimorKey();
       if (!apiKey) return;
 
-      const res = await chatService.getChats({
+      // Fetch members directly from the API
+      const membersRes = await chatService.getAllMembers({ apiKey });
+      if (membersRes && membersRes.ok && Array.isArray(membersRes.data)) {
+        const formattedMembers = membersRes.data.map((member) => ({
+          key: member._id,
+          label: member.fullName,
+        }));
+        setMemberList(formattedMembers);
+      }
+
+      // Fetch chat data to extract providers
+      const chatsRes = await chatService.getChats({
         apiKey,
         page: 1,
-        limit: 100, // Get a large sample to extract member data
+        limit: 100, // Get a sample to extract provider data
       });
 
-      if (res && res.ok && Array.isArray(res.data)) {
-        // Extract unique members from chat data
-        const uniqueMembers = new Map();
+      if (chatsRes && chatsRes.ok && Array.isArray(chatsRes.data)) {
+        // Extract unique providers from chat data
+        const uniqueProviders = new Map();
 
-        res.data.forEach((chat) => {
-          if (chat.admin && chat.admin._id && chat.admin.fullName) {
-            uniqueMembers.set(chat.admin._id, {
-              key: chat.admin._id,
-              label: chat.admin.fullName,
+        chatsRes.data.forEach((chat) => {
+          // Process providers
+          if (chat.provider) {
+            uniqueProviders.set(chat.provider, {
+              key: chat.provider,
+              label:
+                chat.provider.charAt(0).toUpperCase() + chat.provider.slice(1),
             });
           }
         });
 
-        setMemberList(Array.from(uniqueMembers.values()));
+        setProviderList(Array.from(uniqueProviders.values()));
       }
     } catch (err) {
-      console.error("Error fetching members:", err);
+      console.error("Error fetching data:", err);
     }
-  }, []);
-
-  // Main fetch function for chats
+  }, []); // Main fetch function for chats
   const fetchChats = useCallback(async () => {
     setLoading(true);
     try {
@@ -121,6 +136,7 @@ export default function TableChatManager() {
       ) {
         filter.status = filterStatus as "pending" | "error" | "success";
       }
+      if (filterProvider) filter.provider = filterProvider;
       if (filterStartDate) filter.startDate = filterStartDate;
       if (filterEndDate) filter.endDate = filterEndDate;
 
@@ -153,6 +169,7 @@ export default function TableChatManager() {
     filterMemberId,
     debouncedSearchValue, // Using debounced value instead of direct state
     filterStatus,
+    filterProvider,
     filterStartDate,
     filterEndDate,
     page,
@@ -185,6 +202,26 @@ export default function TableChatManager() {
         return "warning";
       default:
         return "default";
+    }
+  };
+
+  const getProviderColor = (
+    provider: string | undefined
+  ): "primary" | "secondary" | "success" | "warning" => {
+    if (!provider) return "primary";
+
+    switch (provider.toLowerCase()) {
+      case "deepseek":
+        return "secondary";
+      case "openai":
+      case "gpt-4":
+      case "gpt-3.5":
+        return "success";
+      case "gemini":
+      case "claude":
+        return "warning";
+      default:
+        return "primary";
     }
   };
 
@@ -268,6 +305,38 @@ export default function TableChatManager() {
                   Pending
                 </Chip>
               </SelectItem>
+            </>
+          </Select>
+
+          {/* Provider Filter */}
+          <Select
+            size="md"
+            labelPlacement="outside"
+            defaultSelectedKeys={[""]}
+            placeholder="All Providers"
+            className="w-40"
+            selectedKeys={filterProvider ? [filterProvider] : [""]}
+            onSelectionChange={(keys) => {
+              setFilterProvider((Array.from(keys)[0] as string) || "");
+              setPage(1); // Reset to page 1 when changing filters
+            }}
+          >
+            <>
+              <SelectItem key="" textValue="All Providers">
+                All Providers
+              </SelectItem>
+              {providerList.map((provider) => (
+                <SelectItem key={provider.key} textValue={provider.label}>
+                  <Chip
+                    color={getProviderColor(provider.key)}
+                    size="sm"
+                    variant="flat"
+                    className="capitalize"
+                  >
+                    {provider.label}
+                  </Chip>
+                </SelectItem>
+              ))}
             </>
           </Select>
 
@@ -410,6 +479,43 @@ export default function TableChatManager() {
                 >
                   {chat.status}
                 </Chip>
+              </TableCell>
+              <TableCell align="center">
+                {chat.status === "error" && chat.message ? (
+                  (() => {
+                    const { content, isTruncated, fullContent } = truncateText(
+                      chat.message,
+                      30
+                    );
+                    return isTruncated ? (
+                      <Tooltip
+                        content={fullContent}
+                        color="danger"
+                        placement="bottom"
+                      >
+                        <div className="cursor-help text-danger">{content}</div>
+                      </Tooltip>
+                    ) : (
+                      <div className="text-danger">{content}</div>
+                    );
+                  })()
+                ) : (
+                  <span className="text-gray-500">-</span>
+                )}
+              </TableCell>
+              <TableCell align="center">
+                {chat.provider ? (
+                  <Chip
+                    color={getProviderColor(chat.provider)}
+                    variant="flat"
+                    size="sm"
+                    className="capitalize"
+                  >
+                    {chat.provider}
+                  </Chip>
+                ) : (
+                  <span className="text-gray-500">-</span>
+                )}
               </TableCell>
               <TableCell align="center">{formatDate(chat.createdAt)}</TableCell>
             </TableRow>

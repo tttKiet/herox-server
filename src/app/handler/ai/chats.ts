@@ -14,6 +14,7 @@ class ChatHandler {
       memberId,
       userMessage,
       status,
+      provider,
       startDate,
       endDate,
       page = "1",
@@ -52,6 +53,11 @@ class ChatHandler {
       ) {
         // Use exact string matching for status
         filter.status = status;
+      }
+
+      // Provider filter (exact match)
+      if (typeof provider === "string" && provider.trim()) {
+        filter.provider = provider;
       }
 
       // Date range filter

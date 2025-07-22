@@ -56,6 +56,34 @@ class AdminHandler {
     }
   };
 
+  /**
+   * Get all members from admins collection
+   * Used for dropdowns and filters in UI
+   */
+  public getAllMembers: RequestHandler = async function (req, res) {
+    try {
+      const adminCollection = getCollection<IAdmin>("admins");
+
+      // Find all documents where type is "member"
+      const members = await adminCollection
+        .find()
+        .sort({ fullName: 1 }) // Sort alphabetically by name
+        .toArray();
+
+      res.status(200).json({
+        ok: true,
+        data: members,
+      });
+    } catch (err: any) {
+      console.error("Error fetching members:", err.message);
+      res.status(500).json({
+        ok: false,
+        message: "Failed to fetch members",
+        error: err.message,
+      });
+    }
+  };
+
   public getPayment: RequestHandler<IAdmin> = async function (req, res) {
     const { apiKey } = req.body;
 

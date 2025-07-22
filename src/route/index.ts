@@ -40,6 +40,9 @@ mainRouter.post(
   adminHandler.createKeyMember
 );
 
+// Get all members for dropdowns/filters
+mainRouter.get("/api/v1/admin/members", adminHandler.getAllMembers);
+
 mainRouter.post(
   "/api/v1/member/payment",
   managerHandler.memberMdw,

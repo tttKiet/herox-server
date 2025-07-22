@@ -1,4 +1,5 @@
 import apiClient from "./axios-config";
+import { ADMIN_MEMBERS_API } from "./endpoints";
 
 // Add endpoint to endpoints.ts
 export const CHAT_API = "/api/v1/ai/chats";
@@ -19,6 +20,8 @@ export interface IChat {
   userMessage: string;
   aiContent?: string;
   promptId?: string;
+  message?: string; // Error message when status is "error"
+  provider?: string; // AI provider (e.g., "deepseek", "openai", etc.)
   createdAt: string;
   updatedAt: string;
 }
@@ -31,6 +34,7 @@ export interface IFilterChat {
   memberId?: string;
   userMessage?: string;
   status?: "pending" | "error" | "success";
+  provider?: string;
   startDate?: string;
   endDate?: string;
 }
@@ -47,6 +51,12 @@ export interface IChatResponse {
   message: string;
   data: IChatWithAdmin[];
   pagination?: IPaginationResponse;
+}
+
+// Interface for member response
+export interface IMemberResponse {
+  ok: boolean;
+  data: IAdmin[];
 }
 
 class ChatService {
@@ -78,6 +88,19 @@ class ChatService {
     params.limit = limit;
 
     const response = await apiClient.get(CHAT_API, { params });
+    return response.data;
+  }
+
+  /**
+   * Get all members from the admin collection
+   */
+  async getAllMembers({
+    apiKey,
+  }: {
+    apiKey?: string;
+  }): Promise<IMemberResponse> {
+    const params = apiKey ? { apiKey } : {};
+    const response = await apiClient.get(ADMIN_MEMBERS_API, { params });
     return response.data;
   }
 }

@@ -6,6 +6,7 @@ import {
   HiOutlineNewspaper,
   HiTag,
   HiFolderOpen,
+  HiOutlineChatBubbleBottomCenterText,
 } from "react-icons/hi2";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -43,6 +44,17 @@ const navBarLeft: MenuProps["items"] = [
       },
     ],
   },
+  {
+    type: "group",
+    label: <div className="text-xs font-bold">VIEW</div>,
+    children: [
+      {
+        label: <Link href="/chat-response">Chat Response</Link>,
+        icon: <HiOutlineChatBubbleBottomCenterText />,
+        key: "CHAT_RESPONSE",
+      },
+    ],
+  },
 ];
 
 function MainLayout({ children }: { children: React.ReactNode }) {
@@ -57,6 +69,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     if (pathname.startsWith("/prompt")) return ["PROMPT"];
     if (pathname.startsWith("/topic")) return ["TOPIC"];
     if (pathname.startsWith("/project")) return ["PROJECT"];
+    if (pathname.startsWith("/chat-response")) return ["CHAT_RESPONSE"];
     return [];
   };
 

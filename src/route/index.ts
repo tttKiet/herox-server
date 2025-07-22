@@ -4,18 +4,21 @@ import AdminHandler from "../app/handler/admin";
 import ManagerHandler from "../app/handler/manager";
 import AiHandler from "../app/handler/ai";
 import AuthHandler from "../app/handler/auth/auth.index";
+import ChatHandler from "../app/handler/ai/chats";
 
 const xHandler = new XHandler();
 const aiHandler = new AiHandler();
 const adminHandler = new AdminHandler();
 const managerHandler = new ManagerHandler();
 const authHandler = new AuthHandler();
+const chatHandler = new ChatHandler();
 
 const mainRouter = Router();
 
 // ai
 mainRouter.get("/api/v1/ai/chat/:chatId", aiHandler.getChat);
 mainRouter.post("/api/v1/ai/chat", aiHandler.chatResp);
+mainRouter.get("/api/v1/ai/chats", chatHandler.getChats);
 
 // drawer
 mainRouter.get("/api/v1/scrape/:username", xHandler.scrape);

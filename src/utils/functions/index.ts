@@ -120,3 +120,21 @@ export function getAPIKeyProvider(apiKey: string): string {
   const check = checkAPIKeyProvider(apiKey);
   return check.provider;
 }
+
+/**
+ * Xoá nội dung trong dấu ngoặc đơn từ một chuỗi
+ * @param text - Chuỗi cần xử lý
+ * @returns string - Chuỗi sau khi đã loại bỏ nội dung trong ngoặc đơn
+ *
+ * Ví dụ:
+ * "abcs (sadsasacas)" -> "abcs "
+ * "Hello world (note: example)" -> "Hello world "
+ */
+export function removeTextInParentheses(text: string): string {
+  if (!text || typeof text !== "string") {
+    return "";
+  }
+
+  // Sử dụng regex để xoá tất cả nội dung trong dấu ngoặc đơn
+  return text.replace(/\([^)]*\)/g, "");
+}

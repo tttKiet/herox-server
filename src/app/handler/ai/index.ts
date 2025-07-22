@@ -3,7 +3,11 @@ import { RequestHandler } from "express";
 import GeminiAI from "../../../class/GeminiHandler";
 import N8nHelper from "../../../class/N8nHelper";
 import PromptService from "../../../class/PromptService";
-import { isDeepSeekAPIKey, isGeminiAPIKey } from "../../../utils/functions";
+import {
+  isDeepSeekAPIKey,
+  isGeminiAPIKey,
+  removeTextInParentheses,
+} from "../../../utils/functions";
 import { IChat } from "src/utils/interfaces";
 import { getCollection } from "../../../utils/mongoDb";
 import { logger } from "../../../utils/logger";
@@ -294,7 +298,7 @@ async function processDeepSeekRequest(
       {
         $set: {
           status: "success",
-          aiContent: respAi,
+          aiContent: removeTextInParentheses(respAi),
           updatedAt: new Date(),
           provider: "deepseek",
         },
@@ -339,7 +343,7 @@ async function processChatRequest(chat: IChat, apiKey: string): Promise<void> {
         {
           $set: {
             status: "success",
-            aiContent: resp.data,
+            aiContent: removeTextInParentheses(resp.data),
             updatedAt: new Date(),
             provider: "nimo-ai-server",
           },
@@ -413,7 +417,7 @@ async function processGeminiRequest(
       {
         $set: {
           status: "success",
-          aiContent: respAi,
+          aiContent: removeTextInParentheses(respAi),
           updatedAt: new Date(),
           provider: "gemini",
         },

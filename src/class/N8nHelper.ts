@@ -1,9 +1,8 @@
+import axios from "axios";
 import "dotenv/config";
 import { IPostReg } from "../utils/interfaces";
 import { logger } from "../utils/logger";
-import PromptService from "./PromptService";
 import TopicManager from "./TopicManager";
-import axios from "axios";
 // GeminiDirectApi được import động trong function để tránh circular dependency
 
 const API_N8N_CREATE_POST_AGENT = process.env.API_N8N_HELPER_REUP_POST_IMG_PRO;
@@ -13,6 +12,8 @@ const API_N8N_CHAT_REPLY_WITH_AGENT =
 const API_N8N_CHAT_REPLY_DIRECT = process.env.API_N8N_HELPER_CHAT_REPLY_DIRECT;
 
 const API_N8N_GENERATOR_TOPIC = process.env.API_N8N_HELPER_GENERATOR_TOPIC;
+
+const timeoutApi = Number.parseInt(process.env.TIMEOUT_API || "400000"); // Mặc định là 400 giây
 
 if (!API_N8N_CREATE_POST_AGENT) {
   logger.error("API_N8N_CREATE_POST_AGENT is not defined in .env");
@@ -32,7 +33,6 @@ if (!API_N8N_GENERATOR_TOPIC) {
   throw new Error("API_N8N_GENERATOR_TOPIC is not defined in .env");
 }
 
-const promptService = new PromptService();
 const topicManager = new TopicManager();
 
 export interface IResN8nPost {
@@ -87,8 +87,7 @@ class N8nHelper {
           headers: {
             "Content-Type": "Application/json",
           },
-          timeout: 55000, // 55 giây - ngắn hơn 60s của Cloudflare/Nginx
-          maxRedirects: 5,
+          timeout: timeoutApi,
         }
       );
       const res: IResN8nPost = resp.data;
@@ -106,7 +105,7 @@ class N8nHelper {
       headers: {
         "Content-Type": "Application/json",
       },
-      timeout: 200000,
+      timeout: timeoutApi,
     };
 
     // Dữ liệu gửi đi
@@ -187,7 +186,7 @@ class N8nHelper {
         headers: {
           "Content-Type": "Application/json",
         },
-        timeout: 200000, // 200 giây
+        timeout: timeoutApi,
       });
       const resData: {
         ok: boolean;

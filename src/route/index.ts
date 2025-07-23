@@ -34,7 +34,7 @@ mainRouter.post(
 // check post interact
 mainRouter.post("/api/v1/x/save-interact-post", xHandler.saveLinkInteract);
 mainRouter.post("/api/v1/x/check-interact-post", xHandler.checkLinkInteract);
-mainRouter.post(
+mainRouter.get(
   "/api/v1/x/interact-posts",
   interactPostHandler.getInteractPosts
 );

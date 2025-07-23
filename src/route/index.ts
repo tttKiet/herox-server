@@ -34,9 +34,13 @@ mainRouter.post(
 // check post interact
 mainRouter.post("/api/v1/x/save-interact-post", xHandler.saveLinkInteract);
 mainRouter.post("/api/v1/x/check-interact-post", xHandler.checkLinkInteract);
-mainRouter.get(
+mainRouter.post(
   "/api/v1/x/interact-posts",
   interactPostHandler.getInteractPosts
+);
+mainRouter.post(
+  "/api/v1/x/random-non-interacted-link",
+  interactPostHandler.getRandomNonInteractedLink
 );
 
 // admin

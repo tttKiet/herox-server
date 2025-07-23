@@ -1,14 +1,18 @@
-function removeTextInParentheses(text) {
-  if (!text || typeof text !== "string") {
-    return "";
+function updateLocalStorageWithUsername(username) {
+  const storageKey = "taskLink"; // Tên key trong localStorage
+  let usernames = [];
+
+  // Kiểm tra nếu đã có dữ liệu trong localStorage
+  const storedData = localStorage.getItem(storageKey);
+  if (storedData) {
+    usernames = JSON.parse(storedData); // Chuyển từ JSON về array
   }
 
-  // Sử dụng regex để xoá tất cả nội dung trong dấu ngoặc đơn
-  return text.replace(/\([^)]*\)/g, "");
+  // Kiểm tra và thêm username nếu chưa có trong array
+  if (!usernames.includes(username)) {
+    usernames.push(username.toLowerCase());
+    localStorage.setItem(storageKey, JSON.stringify(usernames)); // Lưu lại array xuống localStorage
+  }
 }
 
-console.log(
-  removeTextInParentheses(
-    `Feels great to see this critical aspect finally resolved. 😄`
-  )
-); // Kết quả: "Portal actually solving bitcoins defi isolation with atomic swaps makes bridging feel obsolete , chain-agnostic sound money... that's  "
+updateLocalStorageWithUsername("$nonInteractedLinks[$loopIndex]");

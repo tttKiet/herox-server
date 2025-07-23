@@ -103,6 +103,120 @@ class InteractPostHandler {
       });
     }
   };
+
+  /**
+   * Get random non-interacted links for a specific author
+   * Filters out links that have already been interacted with by the provided author
+   */
+  public getRandomNonInteractedLink: RequestHandler = async (req, res) => {
+    const { apiKey, authorUsername, myUserName } = req.body;
+    let links = req.body.links || [];
+
+    // Process links if it's a string with format "link1||link2||link3"
+    if (typeof links === "string") {
+      links = links.split("||").filter((link) => link.trim() !== "");
+    }
+
+    // Validate required parameters
+    if (!authorUsername || !Array.isArray(links) || links.length === 0) {
+      res.status(400).json({
+        ok: false,
+        message:
+          "Missing required parameters: authorUsername and links array or string",
+      });
+      return;
+    }
+
+    try {
+      const interactPostCollection =
+        getCollection<IInteractPost>("interactPosts");
+
+      // Extract postIds from links
+      const postIds = links.map((link) => {
+        // Check if it's a URL and extract postId
+        if (
+          typeof link === "string" &&
+          (link.includes("x.com/") || link.includes("twitter.com/"))
+        ) {
+          const urlMatch = link.match(/\/status\/(\d+)/i);
+          return urlMatch && urlMatch[1] ? urlMatch[1] : link;
+        }
+        return link;
+      });
+
+      // Find all posts that have been interacted with by this author
+      const interactedPosts = await interactPostCollection
+        .find({
+          authorUsername: authorUsername,
+          postId: { $in: postIds },
+        })
+        .toArray();
+
+      // Extract the postIds that have been interacted with
+      const interactedPostIds = interactedPosts.map((post) => post.postId);
+
+      // Filter out the links that have not been interacted with and not from myUserName
+      const nonInteractedLinks = links.filter((link) => {
+        // Skip empty links
+        if (!link || link.trim() === "") return false;
+
+        // Skip links from myUserName if provided
+        if (myUserName && typeof link === "string") {
+          // Check if the link contains myUserName
+          const userRegex = new RegExp(
+            `x\\.com\\/${myUserName}[\\/\\?]|twitter\\.com\\/${myUserName}[\\/\\?]`,
+            "i"
+          );
+          if (userRegex.test(link)) return false;
+        }
+
+        // Check if it's already been interacted with
+        const postId = this.extractPostIdFromLink(link);
+        return !interactedPostIds.includes(postId);
+      });
+
+      // Select a random link from the non-interacted links
+      let randomLink = null;
+      if (nonInteractedLinks.length > 0) {
+        const randomIndex = Math.floor(
+          Math.random() * nonInteractedLinks.length
+        );
+        randomLink = nonInteractedLinks[randomIndex];
+      }
+
+      res.status(200).json({
+        ok: true,
+        message: "Non-interacted links retrieved successfully",
+        data: {
+          nonInteractedLinks: nonInteractedLinks,
+          randomLink: randomLink,
+        },
+      });
+    } catch (err: any) {
+      console.error("Error getting non-interacted links:", err);
+      res.status(500).json({
+        ok: false,
+        message: "Failed to get non-interacted links",
+        error: err.message,
+      });
+    }
+  };
+
+  /**
+   * Helper method to extract postId from a link
+   */
+  private extractPostIdFromLink(link: string): string {
+    if (!link) return "";
+
+    if (
+      typeof link === "string" &&
+      (link.includes("x.com/") || link.includes("twitter.com/"))
+    ) {
+      const urlMatch = link.match(/\/status\/(\d+)/i);
+      return urlMatch && urlMatch[1] ? urlMatch[1] : link;
+    }
+    return link;
+  }
 }
 
 export default InteractPostHandler;

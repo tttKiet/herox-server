@@ -26,14 +26,39 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
+  DatePicker,
 } from "@heroui/react";
 import {
   HiOutlineMagnifyingGlass,
   HiOutlineUsers,
-  HiOutlineCalendar,
   HiOutlineClipboardDocument,
   HiOutlineDocumentText,
 } from "react-icons/hi2";
+import { parseAbsolute, type ZonedDateTime } from "@internationalized/date";
+
+// Hàm trợ giúp để chuyển đổi từ chuỗi ISO sang đối tượng ZonedDateTime
+const isoStringToCalendarDate = (isoString: string | null | undefined) => {
+  if (!isoString || isoString === "") return null;
+  try {
+    return parseAbsolute(isoString, "Asia/Bangkok"); // Using Bangkok timezone (GMT+7)
+  } catch (error) {
+    console.error("Error converting ISO to ZonedDateTime:", error);
+    return null;
+  }
+};
+
+// Hàm trợ giúp để chuyển đổi từ ZonedDateTime sang chuỗi ISO
+const calendarDateToIsoString = (date: ZonedDateTime | null | undefined) => {
+  if (!date) return "";
+  try {
+    // Chuyển ZonedDateTime thành JavaScript Date và lấy ISO string
+    const jsDate = date.toDate();
+    return jsDate.toISOString();
+  } catch (error) {
+    console.error("Error converting ZonedDateTime to ISO:", error);
+    return "";
+  }
+};
 import {
   interactPostService,
   IInteractPost,
@@ -89,7 +114,7 @@ export default function TableInteractPostManager() {
     useState<boolean>(false);
   const [usernameList, setUsernameList] = useState<string>("");
   const [fromDate, setFromDate] = useState<string>("");
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState<boolean>(false);
+  const [toDate, setToDate] = useState<string>("");
 
   // Apply debounce to the search inputs with 500ms delay
   const debouncedSearchValue = useDebounce(filterSearch, 500);
@@ -125,11 +150,39 @@ export default function TableInteractPostManager() {
         }
       }
 
-      // Apply date filter
+      // Apply date filters with validation
       if (fromDate) {
-        filter.fromDate = fromDate;
+        try {
+          // Kiểm tra xem fromDate có phải là chuỗi ISO date hợp lệ không
+          const dateObj = new Date(fromDate);
+          if (!isNaN(dateObj.getTime())) {
+            filter.fromDate = fromDate;
+            console.log("Frontend sending fromDate:", fromDate);
+          } else {
+            console.error("Invalid fromDate format:", fromDate);
+          }
+        } catch (error) {
+          console.error("Error processing fromDate:", error);
+        }
       }
 
+      if (toDate) {
+        try {
+          // Kiểm tra xem toDate có phải là chuỗi ISO date hợp lệ không
+          const dateObj = new Date(toDate);
+          if (!isNaN(dateObj.getTime())) {
+            filter.toDate = toDate;
+            console.log("Frontend sending toDate:", toDate);
+          } else {
+            console.error("Invalid toDate format:", toDate);
+          }
+        } catch (error) {
+          console.error("Error processing toDate:", error);
+        }
+      }
+
+      // Debug message for all filters
+      console.log("All filters being sent:", JSON.stringify(filter));
       const res = await interactPostService.getInteractPosts({
         apiKey,
         filter: Object.keys(filter).length ? filter : undefined,
@@ -161,6 +214,7 @@ export default function TableInteractPostManager() {
     userSearchMode,
     usernameList,
     fromDate,
+    toDate,
     page,
     rowsPerPage,
   ]);
@@ -168,6 +222,15 @@ export default function TableInteractPostManager() {
   useEffect(() => {
     fetchInteractPosts();
   }, [fetchInteractPosts]);
+
+  // Effect để ghi log khi fromDate hoặc toDate thay đổi
+  useEffect(() => {
+    console.log("fromDate state:", fromDate);
+  }, [fromDate]);
+
+  useEffect(() => {
+    console.log("toDate state:", toDate);
+  }, [toDate]);
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "-";
@@ -388,65 +451,19 @@ export default function TableInteractPostManager() {
     );
   };
 
-  // Date picker modal
-  const DatePickerModal = () => {
-    // Create a local state for the date to prevent UI issues
-    const [localFromDate, setLocalFromDate] = useState(fromDate);
-
-    // Update local state when modal opens
-    useEffect(() => {
-      if (isDatePickerOpen) {
-        setLocalFromDate(fromDate);
-      }
-    }, []);
-
-    const handleApplyDateFilter = () => {
-      setFromDate(localFromDate);
-      setIsDatePickerOpen(false);
-      setPage(1); // Reset to first page
-    };
-
-    return (
-      <Modal
-        isOpen={isDatePickerOpen}
-        onClose={() => setIsDatePickerOpen(false)}
-      >
-        <ModalContent>
-          <ModalHeader>Filter by Date</ModalHeader>
-          <ModalBody>
-            <div>
-              <p className="text-sm mb-2">Show posts from:</p>
-              <Input
-                type="datetime-local"
-                value={localFromDate}
-                onValueChange={setLocalFromDate}
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setIsDatePickerOpen(false)}>
-              Cancel
-            </Button>
-            <Button color="primary" onPress={handleApplyDateFilter}>
-              Apply Filter
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  };
+  // No additional helper functions needed
 
   return (
     <div>
       <UsernameListModal />
-      <DatePickerModal />
 
-      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-        <div className="flex gap-4 flex-wrap">
+      <div className="flex justify-between items-center flex-wrap gap-6 mb-6">
+        <div className="flex gap-4 flex-wrap items-center">
           {/* Combined Author/Target Filter */}
-          <div className="flex gap-2">
+          <div className="flex items-center gap-6">
             <Input
               size="md"
+              label="Username"
               placeholder="Search by username"
               value={userSearchText}
               startContent={
@@ -458,8 +475,23 @@ export default function TableInteractPostManager() {
               }}
               className="w-48"
             />
+
+            <span> | </span>
+
+            {/* Username List Button */}
+            <Button
+              size="md"
+              color="default"
+              startContent={<HiOutlineUsers />}
+              onPress={() => setIsUsernameModalOpen(true)}
+            >
+              Filter username by list
+            </Button>
+
             <Select
               size="md"
+              label="Filter type"
+              aria-label="Filter by author or target"
               defaultSelectedKeys={["author"]}
               selectedKeys={[userSearchMode]}
               onSelectionChange={(keys) => {
@@ -474,30 +506,132 @@ export default function TableInteractPostManager() {
               <SelectItem key="target">Target</SelectItem>
             </Select>
           </div>
+          {/* Date Filter Controls */}
+          <span> | </span>
+          <div className="flex flex-col items-center gap-6 md:flex-row md:items-center">
+            <div className="flex items-end gap-2">
+              <div className="flex flex-col gap-1 flex-1">
+                <DatePicker
+                  aria-label="From date"
+                  id="from-date-input"
+                  label="From date"
+                  className="min-w-[240px]"
+                  granularity="second"
+                  value={
+                    fromDate ? isoStringToCalendarDate(fromDate) : undefined
+                  }
+                  onChange={(date) => {
+                    try {
+                      if (date) {
+                        const isoString = calendarDateToIsoString(date);
+                        console.log("From date changed:", isoString);
+                        setFromDate(isoString);
+                        setPage(1);
+                      } else {
+                        console.log("From date cleared");
+                        setFromDate("");
+                        setPage(1);
+                      }
+                    } catch (error) {
+                      console.error("Error setting date:", error);
+                    }
+                  }}
+                  endContent={
+                    <Button
+                      size="sm"
+                      variant="light"
+                      color="primary"
+                      onPress={() => {
+                        try {
+                          // Sử dụng thời gian hiện tại của máy
+                          const now = new Date();
+                          const isoString = now.toISOString();
 
-          {/* Username List Button */}
-          <Button
-            size="md"
-            startContent={<HiOutlineUsers />}
-            onPress={() => setIsUsernameModalOpen(true)}
-          >
-            Username List
-          </Button>
+                          if (!isNaN(now.getTime())) {
+                            console.log(
+                              "Setting fromDate with current time:",
+                              isoString
+                            );
+                            setFromDate(isoString);
+                            setPage(1);
+                          }
+                        } catch (error) {
+                          console.error("Error setting current date:", error);
+                        }
+                      }}
+                      className="px-1"
+                    >
+                      Now
+                    </Button>
+                  }
+                />
+              </div>
+            </div>
 
-          {/* Date Filter Button */}
-          <Button
-            size="md"
-            startContent={<HiOutlineCalendar />}
-            onPress={() => setIsDatePickerOpen(true)}
-          >
-            Date Filter
-          </Button>
+            <div className="flex items-end gap-2">
+              <div className="flex flex-col gap-1 flex-1">
+                <DatePicker
+                  aria-label="To date"
+                  id="to-date-input"
+                  label="To date"
+                  className="min-w-[240px]"
+                  granularity="second"
+                  value={toDate ? isoStringToCalendarDate(toDate) : undefined}
+                  onChange={(date) => {
+                    try {
+                      if (date) {
+                        const isoString = calendarDateToIsoString(date);
+                        console.log("To date changed:", isoString);
+                        setToDate(isoString);
+                        setPage(1);
+                      } else {
+                        console.log("To date cleared");
+                        setToDate("");
+                        setPage(1);
+                      }
+                    } catch (error) {
+                      console.error("Error setting date:", error);
+                    }
+                  }}
+                  endContent={
+                    <Button
+                      size="sm"
+                      variant="light"
+                      color="primary"
+                      onPress={() => {
+                        try {
+                          // Sử dụng thời gian hiện tại của máy
+                          const now = new Date();
+                          const isoString = now.toISOString();
+
+                          if (!isNaN(now.getTime())) {
+                            console.log(
+                              "Setting toDate with current time:",
+                              isoString
+                            );
+                            setToDate(isoString);
+                            setPage(1);
+                          }
+                        } catch (error) {
+                          console.error("Error setting current date:", error);
+                        }
+                      }}
+                      className="px-1"
+                    >
+                      Now
+                    </Button>
+                  }
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Post ID or URL Search */}
         <div className="flex-1 max-w-md ml-4">
           <Input
             size="md"
+            label="Search"
             placeholder="Search by Post/Comment ID or URL..."
             value={filterSearch}
             startContent={
@@ -537,9 +671,26 @@ export default function TableInteractPostManager() {
             color="primary"
             variant="flat"
             size="sm"
-            onClose={() => setFromDate("")}
+            onClose={() => {
+              setFromDate(""); // Xóa state fromDate
+              setPage(1); // Reset lại trang
+            }}
           >
             From: {new Date(fromDate).toLocaleString()}
+          </Chip>
+        )}
+
+        {toDate && (
+          <Chip
+            color="primary"
+            variant="flat"
+            size="sm"
+            onClose={() => {
+              setToDate(""); // Xóa state toDate
+              setPage(1); // Reset lại trang
+            }}
+          >
+            To: {new Date(toDate).toLocaleString()}
           </Chip>
         )}
       </div>

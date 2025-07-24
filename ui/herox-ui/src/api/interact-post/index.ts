@@ -19,6 +19,7 @@ export interface IFilterInteractPost {
   authorUsernames?: string; // Filter by list of authors (newline separated)
   targetUsernames?: string; // Filter by list of targets (newline separated)
   fromDate?: string; // Filter posts from this date/time
+  toDate?: string; // Filter posts up to this date/time
 }
 
 export interface IPaginationResponse {

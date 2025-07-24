@@ -27,6 +27,7 @@ class InteractPostHandler {
       authorUsernames,
       targetUsernames,
       fromDate,
+      toDate,
       page = "1",
       limit = "10",
     } = req.query;
@@ -93,16 +94,50 @@ class InteractPostHandler {
         }
       }
 
-      // Filter by date
+      // Filter by date range
+      const dateFilter: Record<string, any> = {};
+
+      // Handle fromDate (start of date range)
       if (typeof fromDate === "string" && fromDate.trim()) {
         try {
-          const date = new Date(fromDate);
-          if (!isNaN(date.getTime())) {
-            filter.createdAt = { $gte: date };
+          // Ensure correct parsing by using ISO string format
+          const startDate = new Date(fromDate);
+
+          // Make sure to reset time to start of day if date string doesn't include time
+          if (!fromDate.includes("T") && !fromDate.includes(":")) {
+            startDate.setHours(0, 0, 0, 0);
+          }
+
+          if (!isNaN(startDate.getTime())) {
+            dateFilter.$gte = startDate;
           }
         } catch (err) {
-          console.log("Invalid date format:", fromDate);
+          console.log("Invalid fromDate format:", fromDate, err);
         }
+      }
+
+      // Handle toDate (end of date range) or use current time if not specified
+      if (typeof toDate === "string" && toDate.trim()) {
+        try {
+          // Ensure correct parsing by using ISO string format
+          const endDate = new Date(toDate);
+
+          // Make sure to set time to end of day if date string doesn't include time
+          if (!toDate.includes("T") && !toDate.includes(":")) {
+            endDate.setHours(23, 59, 59, 999);
+          }
+
+          if (!isNaN(endDate.getTime())) {
+            dateFilter.$lte = endDate;
+          }
+        } catch (err) {
+          console.log("Invalid toDate format:", toDate, err);
+        }
+      }
+
+      // Apply date filter if any date parameter is specified
+      if (Object.keys(dateFilter).length > 0) {
+        filter.createdAt = dateFilter;
       }
 
       // Parse page & limit
@@ -136,6 +171,10 @@ class InteractPostHandler {
           limit: limitNum,
           total,
           totalPages,
+        },
+        debug: {
+          filter: filter,
+          dateFilter: dateFilter,
         },
       });
     } catch (err: any) {

@@ -7,6 +7,7 @@ interface IInteractPost {
   action: string | null;
   targetUsername: string;
   postId: string;
+  commentId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +24,9 @@ class InteractPostHandler {
       search,
       authorUsername,
       targetUsername,
+      authorUsernames,
+      targetUsernames,
+      fromDate,
       page = "1",
       limit = "10",
     } = req.query;
@@ -31,34 +35,74 @@ class InteractPostHandler {
       // Build filter
       const filter: Record<string, any> = {};
 
-      // Handle search parameter which could be postId or a URL
+      // Handle search parameter which could be postId, commentId or a URL
       if (typeof search === "string" && search.trim()) {
-        let postId = search.trim();
+        let searchTerm = search.trim();
 
         // Check if search is a URL
         if (search.includes("x.com/") || search.includes("twitter.com/")) {
-          // Extract postId from URL (last path segment before query params)
+          // Extract postId or commentId from URL
           const urlMatch = search.match(/\/status\/(\d+)/i);
           if (urlMatch && urlMatch[1]) {
-            postId = urlMatch[1];
+            searchTerm = urlMatch[1];
           }
         }
 
-        // Search by postId with flexible matching
-        if (postId) {
-          // Use regex to find partial matches too
-          filter.postId = { $regex: postId, $options: "i" };
+        // Search by postId or commentId with flexible matching
+        if (searchTerm) {
+          filter.$or = [
+            { postId: { $regex: searchTerm, $options: "i" } },
+            { commentId: { $regex: searchTerm, $options: "i" } },
+          ];
         }
       }
 
-      // Filter by authorUsername
+      // Filter by authorUsername (single value)
       if (typeof authorUsername === "string" && authorUsername.trim()) {
         filter.authorUsername = { $regex: authorUsername, $options: "i" };
       }
 
-      // Filter by targetUsername
+      // Filter by targetUsername (single value)
       if (typeof targetUsername === "string" && targetUsername.trim()) {
         filter.targetUsername = { $regex: targetUsername, $options: "i" };
+      }
+
+      // Filter by list of authorUsernames
+      if (typeof authorUsernames === "string" && authorUsernames.trim()) {
+        const usernameList = authorUsernames
+          .split("\n")
+          .map((u) => u.trim())
+          .filter(Boolean);
+        if (usernameList.length > 0) {
+          filter.authorUsername = {
+            $in: usernameList.map((u) => new RegExp(u, "i")),
+          };
+        }
+      }
+
+      // Filter by list of targetUsernames
+      if (typeof targetUsernames === "string" && targetUsernames.trim()) {
+        const usernameList = targetUsernames
+          .split("\n")
+          .map((u) => u.trim())
+          .filter(Boolean);
+        if (usernameList.length > 0) {
+          filter.targetUsername = {
+            $in: usernameList.map((u) => new RegExp(u, "i")),
+          };
+        }
+      }
+
+      // Filter by date
+      if (typeof fromDate === "string" && fromDate.trim()) {
+        try {
+          const date = new Date(fromDate);
+          if (!isNaN(date.getTime())) {
+            filter.createdAt = { $gte: date };
+          }
+        } catch (err) {
+          console.log("Invalid date format:", fromDate);
+        }
       }
 
       // Parse page & limit

@@ -35,6 +35,7 @@ export interface IUserInteractPost {
   authorUsername: string;
   targetUsername: string;
   postId?: string;
+  commentId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

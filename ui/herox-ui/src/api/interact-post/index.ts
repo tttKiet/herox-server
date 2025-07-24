@@ -7,14 +7,18 @@ export interface IInteractPost {
   action: string | null;
   targetUsername: string;
   postId: string;
+  commentId?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface IFilterInteractPost {
-  search?: string; // Search by postId or URL
+  search?: string; // Search by postId, commentId or URL
   authorUsername?: string; // Filter by author
   targetUsername?: string; // Filter by target
+  authorUsernames?: string; // Filter by list of authors (newline separated)
+  targetUsernames?: string; // Filter by list of targets (newline separated)
+  fromDate?: string; // Filter posts from this date/time
 }
 
 export interface IPaginationResponse {

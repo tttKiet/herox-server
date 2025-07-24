@@ -194,17 +194,25 @@ class XHandler {
 
   public saveLinkInteract: RequestHandler<Partial<IUserInteractPost>> =
     async function (req, res) {
-      const { postId, action, authorUsername, targetUsername } = req.body;
+      const { postId, action, authorUsername, targetUsername, commentId } =
+        req.body;
 
-      if (!postId || !authorUsername || !targetUsername) {
+      if (!postId || !authorUsername || !targetUsername || !commentId) {
         res.status(400).json({ ok: false, message: "Missing input!" });
         return;
       }
       // convert input
+      // lastPostId
       const urlArray = postId.split("/");
       const postIdString = urlArray[urlArray.length - 1];
 
       const lastPostId = postIdString.split("?")[0];
+
+      // lastCommentId
+      const urlCommentIdArray = commentId?.split("/");
+      const commentIdString = urlCommentIdArray[urlCommentIdArray.length - 1];
+      const lastCommentId = commentIdString.split("?")[0];
+
       // logger.info("Save post id: ", lastPostId);
 
       const lastAuthorUsername = authorUsername.toLowerCase().trim();
@@ -215,6 +223,7 @@ class XHandler {
           getCollection<IUserInteractPost>("interactPosts");
         const postDocs = await interactPostCol.findOne({
           postId: lastPostId,
+          commentId: lastCommentId,
           authorUsername: lastAuthorUsername,
         });
         if (postDocs) {
@@ -232,6 +241,7 @@ class XHandler {
           action: action ? "commented" : undefined,
           targetUsername: lastTargetUsername,
           postId: lastPostId,
+          commentId: lastCommentId,
           createdAt: new Date(),
           updatedAt: new Date(),
         };

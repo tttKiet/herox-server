@@ -536,6 +536,7 @@ export default function TableInteractPostManager() {
                       console.error("Error setting date:", error);
                     }
                   }}
+                  key={`from-date-picker-${fromDate}`} // Force re-render when fromDate changes
                   endContent={
                     <Button
                       size="sm"
@@ -593,6 +594,7 @@ export default function TableInteractPostManager() {
                       console.error("Error setting date:", error);
                     }
                   }}
+                  key={`to-date-picker-${toDate}`} // Force re-render when toDate changes
                   endContent={
                     <Button
                       size="sm"
@@ -672,8 +674,19 @@ export default function TableInteractPostManager() {
             variant="flat"
             size="sm"
             onClose={() => {
+              // Force DatePicker to update by triggering its value change
+              const fromDateInput = document.getElementById("from-date-input");
+              if (fromDateInput) {
+                // Reset the value on the DatePicker if possible
+                const datePickerResetEvent = new Event("reset", {
+                  bubbles: true,
+                });
+                fromDateInput.dispatchEvent(datePickerResetEvent);
+              }
               setFromDate(""); // Xóa state fromDate
               setPage(1); // Reset lại trang
+              // Refetch data after state update
+              setTimeout(() => fetchInteractPosts(), 0);
             }}
           >
             From: {new Date(fromDate).toLocaleString()}
@@ -686,8 +699,19 @@ export default function TableInteractPostManager() {
             variant="flat"
             size="sm"
             onClose={() => {
+              // Force DatePicker to update by triggering its value change
+              const toDateInput = document.getElementById("to-date-input");
+              if (toDateInput) {
+                // Reset the value on the DatePicker if possible
+                const datePickerResetEvent = new Event("reset", {
+                  bubbles: true,
+                });
+                toDateInput.dispatchEvent(datePickerResetEvent);
+              }
               setToDate(""); // Xóa state toDate
               setPage(1); // Reset lại trang
+              // Refetch data after state update
+              setTimeout(() => fetchInteractPosts(), 0);
             }}
           >
             To: {new Date(toDate).toLocaleString()}

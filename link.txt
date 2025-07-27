@@ -1,0 +1,13 @@
+function randomFromString(rangeStr) {
+  const [minStr, maxStr] = rangeStr.split(",");
+  const min = parseInt(minStr, 10);
+  const max = parseInt(maxStr, 10);
+
+  if (isNaN(min) || isNaN(max)) {
+    throw new Error("Chuỗi không hợp lệ, cần dạng 'số,số' vd: '3,7'");
+  }
+
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+return randomFromString("$rangeStr");

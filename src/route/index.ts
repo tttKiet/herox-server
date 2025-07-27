@@ -6,6 +6,7 @@ import AiHandler from "../app/handler/ai";
 import AuthHandler from "../app/handler/auth/auth.index";
 import ChatHandler from "../app/handler/ai/chats";
 import InteractPostHandler from "../app/handler/x/interactPosts";
+import telegramRouter from "./telegramBot";
 
 const xHandler = new XHandler();
 const aiHandler = new AiHandler();
@@ -16,6 +17,9 @@ const chatHandler = new ChatHandler();
 const interactPostHandler = new InteractPostHandler();
 
 const mainRouter = Router();
+
+// Telegram Bot routes
+mainRouter.use("/api/v1/telegram", telegramRouter);
 
 // ai
 mainRouter.get("/api/v1/ai/chat/:chatId", aiHandler.getChat);

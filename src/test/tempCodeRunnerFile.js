@@ -1,5 +1,5 @@
 const url =
-  "https://twitter-api45.p.rapidapi.com/tweet_thread.php?id=1943307782616420643";
+  "https://twitter-api45.p.rapidapi.com/tweet.php?id=1948926195153994222";
 const options = {
   method: "GET",
   headers: {

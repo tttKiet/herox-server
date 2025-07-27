@@ -7,6 +7,8 @@ import { setupDB } from "./utils/mongoDb";
 import { logger } from "./utils/logger";
 import helmet from "helmet";
 import path from "path";
+import { initializeBot } from "./services/telegramBotService";
+import { SettingsManager } from "./class";
 const PORT = process.env.POST_SERVER;
 const MONGODB_URL = process.env.MONGODB_URL || "http://127.0.0.1:27017";
 const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "x-n8n-kaito";
@@ -69,8 +71,22 @@ async function serverRunner() {
   // setup Db
   await setupDB(MONGODB_URL, MONGODB_DB_NAME);
 
+  // Initialize default settings for interaction system
+  try {
+    const settingsManager = new SettingsManager();
+    const settings = await settingsManager.initDefaultSettings();
+    logger.info(
+      `Settings initialized: minLinks=${settings.minimumLinksForTask}, additionalLinks=${settings.additionalLinks}`
+    );
+  } catch (error) {
+    logger.error(`Failed to initialize settings: ${error}`);
+  }
+
   // setup router
   await setupRouter(app);
+
+  // setup bot telegram
+  await initializeBot();
 
   app.listen(PORT, () =>
     logger.info(`Server running on http://localhost:${PORT}`)

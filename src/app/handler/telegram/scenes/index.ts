@@ -4,4 +4,5 @@ export { default as getPostsScene } from "./getPostsScene";
 export { default as postLinksScene } from "./postLinksScene";
 export * from "./setupUserScene";
 export * from "./creditsScene";
+export * from "./myLinksScene";
 export { default as adminPostScene } from "./adminPostScene";

@@ -8,6 +8,7 @@ import {
   KEYBOARDS,
   MESSAGES,
 } from "../../../../utils/constants/botCommands";
+import { NAV_KEYBOARDS } from "../../../../utils/constants/navKeyboards";
 
 // Scene for user to set up profile and register X usernames
 const setupUserScene = new Scenes.BaseScene<any>("setup-user");
@@ -29,27 +30,74 @@ setupUserScene.enter(async (ctx) => {
       `Retrieved ${userXUsernames.length} usernames for user ${ctx.from.id}`
     );
 
+    // Create the setup profile message
+    let profileMessage = "<b>👤 Setup Profile</b>\n\n";
+
+    // Add current profile info if exists
     if (userXUsernames && userXUsernames.length > 0) {
-      // Use HTML instead of Markdown to avoid escaping issues
-      await ctx.reply(
-        `<b>Current Profile Information</b>\n\n` +
-          `- Number of usernames: ${userXUsernames.length}\n` +
-          `- Username list: ${userXUsernames.join(", ")}\n\n` +
-          `You can update by entering a new list of usernames.`,
-        { parse_mode: "HTML" }
-      );
+      profileMessage += `<b>Current Profile:</b> You have ${userXUsernames.length} registered username(s).\n\n`;
     }
+
+    // Add instructions
+    profileMessage +=
+      "Please enter your X usernames, <b>one username per line</b>.\n\n" +
+      "Example:\n<i>username1\nusername2\nusername3\n.............</i>\n\n" +
+      "<i>Note: Each username must be on a separate line. Do not use '@' symbol.</i>";
+
+    // Send the combined message with Cancel button
+    await ctx.reply(profileMessage, {
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "❌ Cancel", callback_data: "cancel_setup" }],
+        ],
+      },
+    });
   } catch (error) {
     logger.error(`Error retrieving user data: ${error}`);
-  }
 
-  // Use HTML instead of Markdown to avoid escaping issues
-  await ctx.reply(
-    "<b>👤 Setup Profile</b>\n\n" +
-      "Please enter your X usernames list (without @), one username per line.\n" +
-      "Example:\n<pre>username1\nusername2\nusername3</pre>",
-    { parse_mode: "HTML" }
-  );
+    // Send just the setup instructions if there was an error getting user data
+    await ctx.reply(
+      "<b>👤 Setup Profile</b>\n\n" +
+        "Please enter your X usernames, <b>one username per line</b>.\n" +
+        "Example:\n<pre>username1\nusername2\nusername3</pre>\n\n" +
+        "<i>Note: Each username must be on a separate line. Do not use '@' symbol.</i>",
+      {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "❌ Cancel", callback_data: "cancel_setup" }],
+          ],
+        },
+      }
+    );
+  }
+});
+
+// Handle the cancel button callback
+setupUserScene.action("cancel_setup", async (ctx) => {
+  try {
+    logger.info(`Cancel button clicked by user ${ctx.from?.id}`);
+    await ctx.answerCbQuery("Setup cancelled");
+    // Try to delete the current message
+    try {
+      await ctx.deleteMessage();
+    } catch (deleteError) {
+      logger.error(`Could not delete message: ${deleteError}`);
+    }
+    // Send a new message with the welcome text and main menu
+    await ctx.reply(`${MESSAGES.CANCEL_OPERATION}\n\n${MESSAGES.WELCOME}`, {
+      parse_mode: "HTML",
+      reply_markup: NAV_KEYBOARDS.START_MENU,
+    });
+    return ctx.scene.leave();
+  } catch (error) {
+    logger.error(`Error handling cancel button: ${error}`);
+    await ctx.reply("Operation cancelled due to an error", {
+      reply_markup: NAV_KEYBOARDS.START_MENU,
+    });
+    return ctx.scene.leave();
+  }
 });
 
 // Handler when receiving text messages
@@ -58,7 +106,10 @@ setupUserScene.on(message("text"), async (ctx) => {
 
   // Check if the message is a cancel command
   if (text.toLowerCase() === COMMANDS.CANCEL) {
-    await ctx.reply(MESSAGES.CANCEL_OPERATION);
+    await ctx.reply(`${MESSAGES.CANCEL_OPERATION}\n\n${MESSAGES.WELCOME}`, {
+      parse_mode: "HTML",
+      reply_markup: NAV_KEYBOARDS.START_MENU,
+    });
     return ctx.scene.leave();
   }
 
@@ -88,7 +139,17 @@ setupUserScene.on(message("text"), async (ctx) => {
   if (usernames.length === 0) {
     return ctx.reply(
       "❌ No valid usernames found.\n\n" +
-        "Please re-enter the username list (without @), one username per line."
+        "Please re-enter the usernames, <b>one username per line</b>.\n" +
+        "Example:\n<pre>username1\nusername2\nusername3</pre>\n\n" +
+        "<i>Note: Usernames can only contain letters, numbers, and underscores.</i>",
+      {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "❌ Cancel", callback_data: "cancel_setup" }],
+          ],
+        },
+      }
     );
   }
 
@@ -130,10 +191,12 @@ setupUserScene.on(message("text"), async (ctx) => {
           `Saved ${usernames.length} username(s):\n` +
           usernamesList +
           "\n\n" +
-          `You can use ${COMMANDS.GET_POSTS} command to receive interaction tasks.`,
+          `You can now use the "${BUTTONS.GET_POSTS}" button or ${COMMANDS.GET_POSTS} command to receive interaction tasks.`,
         {
           parse_mode: "HTML",
-          reply_markup: KEYBOARDS.AFTER_SETUP,
+          reply_markup: {
+            inline_keyboard: NAV_KEYBOARDS.START_MENU.inline_keyboard,
+          },
         }
       );
     } catch (error) {
@@ -156,8 +219,13 @@ setupUserScene.on(message("text"), async (ctx) => {
 setupUserScene.on(message(), async (ctx) => {
   await ctx.reply(
     "❌ Please send only text messages.\n\n" +
-      "Enter your X username list, one username per line.\n" +
-      `Or send ${COMMANDS.CANCEL} to cancel.`
+      "Enter your X usernames, <b>one username per line</b>.\n" +
+      "Example:\n<pre>username1\nusername2\nusername3</pre>\n\n" +
+      `Or send ${COMMANDS.CANCEL} to cancel.`,
+    {
+      parse_mode: "HTML",
+      reply_markup: NAV_KEYBOARDS.START_MENU,
+    }
   );
 });
 

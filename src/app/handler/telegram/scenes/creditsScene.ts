@@ -6,6 +6,7 @@ import {
   KEYBOARDS,
   MESSAGES,
 } from "../../../../utils/constants/botCommands";
+import { NAV_KEYBOARDS } from "../../../../utils/constants/navKeyboards";
 import { TaskManager } from "../../../../class";
 import { ITelegramUser } from "../../../../utils/interfaces";
 import { getCollection } from "../../../../utils/mongoDb";
@@ -76,13 +77,7 @@ creditsScene.enter(async (ctx) => {
       return ctx.scene.leave();
     }
 
-    // Show loading message
-    await ctx.reply(
-      `⏳ <b>Retrieving credit information</b>\n\nPlease wait while we fetch your credit details...`,
-      { parse_mode: "HTML" }
-    );
-
-    // Get credits for all usernames
+    // Get credits for all usernames directly without showing loading message
     await displayCreditsForAllUsernames(
       ctx,
       telegramId,
@@ -93,7 +88,10 @@ creditsScene.enter(async (ctx) => {
     await ctx.reply(
       `❌ Error retrieving your profile data. Please try again later.`,
       {
-        reply_markup: KEYBOARDS.MAIN,
+        reply_markup: {
+          ...KEYBOARDS.MAIN,
+          inline_keyboard: NAV_KEYBOARDS.START_MENU.inline_keyboard,
+        },
       }
     );
     return ctx.scene.leave();

@@ -30,7 +30,7 @@ deleteUsernameScene.enter(async (ctx) => {
 
     if (!userXUsernames || userXUsernames.length === 0) {
       await ctx.reply("❌ You don't have any registered usernames to delete.", {
-        reply_markup: KEYBOARDS.MAIN,
+        reply_markup: KEYBOARDS.DELETE_USERNAMES_PAGE,
       });
       return ctx.scene.leave();
     }
@@ -56,7 +56,7 @@ deleteUsernameScene.enter(async (ctx) => {
     await ctx.reply(
       "❌ An error occurred while retrieving your usernames. Please try again later.",
       {
-        reply_markup: KEYBOARDS.MAIN,
+        reply_markup: KEYBOARDS.DELETE_USERNAMES_PAGE,
       }
     );
     return ctx.scene.leave();
@@ -94,7 +94,7 @@ deleteUsernameScene.on(message("text"), async (ctx) => {
 
     if (!currentUsernames || currentUsernames.length === 0) {
       await ctx.reply("❌ You don't have any registered usernames to delete.", {
-        reply_markup: KEYBOARDS.MAIN,
+        reply_markup: KEYBOARDS.DELETE_USERNAMES_PAGE,
       });
       return ctx.scene.leave();
     }
@@ -163,7 +163,7 @@ deleteUsernameScene.on(message("text"), async (ctx) => {
 
     await ctx.reply(responseMessage, {
       parse_mode: "HTML",
-      reply_markup: KEYBOARDS.MAIN,
+      reply_markup: KEYBOARDS.DELETE_USERNAMES_PAGE,
     });
 
     logger.info(
@@ -179,7 +179,7 @@ deleteUsernameScene.on(message("text"), async (ctx) => {
     await ctx.reply(
       "❌ An error occurred while deleting usernames. Please try again later.",
       {
-        reply_markup: KEYBOARDS.MAIN,
+        reply_markup: KEYBOARDS.DELETE_USERNAMES_PAGE,
       }
     );
     return ctx.scene.leave();

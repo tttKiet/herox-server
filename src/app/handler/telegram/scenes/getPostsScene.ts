@@ -10,12 +10,39 @@ import {
   KEYBOARDS,
   MESSAGES,
 } from "../../../../utils/constants/botCommands";
+import { NAV_KEYBOARDS } from "../../../../utils/constants/navKeyboards";
 import { TaskManager } from "../../../../class";
 import { ITask, ITaskLink, ITelegramUser } from "../../../../utils/interfaces";
 import { getCollection } from "../../../../utils/mongoDb";
 
 // Scene to get interaction tasks
 const getPostsScene = new Scenes.BaseScene<any>("get-posts");
+
+// Add cancel button handler
+getPostsScene.action("cancel_posts", async (ctx) => {
+  try {
+    logger.info(`Cancel button clicked by user ${ctx.from?.id}`);
+    await ctx.answerCbQuery("Operation cancelled");
+    // Try to delete the current message
+    try {
+      await ctx.deleteMessage();
+    } catch (deleteError) {
+      logger.error(`Could not delete message: ${deleteError}`);
+    }
+    // Send a new message with the welcome text and main menu
+    await ctx.reply(`${MESSAGES.CANCEL_OPERATION}\n\n${MESSAGES.WELCOME}`, {
+      parse_mode: "HTML",
+      reply_markup: NAV_KEYBOARDS.START_MENU,
+    });
+    return ctx.scene.leave();
+  } catch (error) {
+    logger.error(`Error handling cancel button: ${error}`);
+    await ctx.reply("Operation cancelled due to an error", {
+      reply_markup: NAV_KEYBOARDS.START_MENU,
+    });
+    return ctx.scene.leave();
+  }
+});
 
 // Handler when entering the scene
 getPostsScene.enter(async (ctx) => {
@@ -80,11 +107,10 @@ getPostsScene.enter(async (ctx) => {
       return ctx.scene.leave();
     }
 
-    // Show loading message
-    await ctx.reply(
-      `⏳ <b>Creating tasks for all your accounts</b>\n\nPlease wait while we prepare interaction tasks for all your X accounts. This may take a moment...`,
-      { parse_mode: "HTML" }
-    );
+    // Record start time without showing a loading message
+    const startTime = Date.now();
+    // Store in scene state so it can be accessed in createTasksForAllUsernames
+    ctx.scene.state.startTime = startTime;
 
     // Create tasks for all usernames at once
     await createTasksForAllUsernames(
@@ -237,6 +263,8 @@ async function createTasksForAllUsernames(
         }
       }
 
+      // No need to wait for a loading message to disappear
+
       // Send overall summary first with credit information
       await ctx.reply(
         `✅ <b>Tasks created successfully</b>\n\n` +
@@ -291,18 +319,20 @@ async function createTasksForAllUsernames(
           `- Complete tasks to earn credits (1 credit per required link)\n` +
           `- Use credits to post your own links (1 credit per link)\n` +
           `- Your current credits: ${totalCredits}\n\n` +
-          `Good luck!`,
+          `Good luck!\n\n${MESSAGES.WELCOME}`,
         {
           parse_mode: "HTML",
-          reply_markup: KEYBOARDS.AFTER_GET_POSTS,
+          reply_markup: NAV_KEYBOARDS.START_MENU,
         }
       );
     } else {
+      // No need to wait for a loading message to disappear
+
       await ctx.reply(
-        "❌ <b>No tasks available</b>\n\nCouldn't create tasks for any of your accounts. Please try again later.",
+        `❌ <b>No tasks available</b>\n\nCouldn't create tasks for any of your accounts. Please try again later.\n\n${MESSAGES.WELCOME}`,
         {
           parse_mode: "HTML",
-          reply_markup: KEYBOARDS.MAIN,
+          reply_markup: NAV_KEYBOARDS.START_MENU,
         }
       );
     }
@@ -315,6 +345,9 @@ async function createTasksForAllUsernames(
         error instanceof Error ? error.message : String(error)
       }`
     );
+
+    // No need to wait for a loading message to disappear
+
     await ctx.reply(
       `❌ <b>Error</b>\n\nFailed to create tasks: ${
         error instanceof Error ? error.message : "Unknown error"

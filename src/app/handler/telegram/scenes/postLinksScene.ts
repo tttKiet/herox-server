@@ -11,6 +11,7 @@ import { NAV_KEYBOARDS } from "../../../../utils/constants/navKeyboards";
 import { TaskManager } from "../../../../class";
 import { IUserCredit, ITelegramUser } from "../../../../utils/interfaces";
 import { getCollection } from "../../../../utils/mongoDb";
+import { inlineKeyboard } from "telegraf/typings/markup";
 
 // Scene to post links for interactions
 const postLinksScene = new Scenes.BaseScene<any>("post-links");
@@ -42,8 +43,9 @@ postLinksScene.action(/^(credits|profile|cancel)$/, async (ctx) => {
       });
     case "cancel":
     default:
-      await ctx.reply(MESSAGES.CANCEL_OPERATION, {
-        reply_markup: KEYBOARDS.MAIN,
+      await ctx.reply(`${MESSAGES.CANCEL_OPERATION}\n\n${MESSAGES.WELCOME}`, {
+        parse_mode: "HTML",
+        reply_markup: NAV_KEYBOARDS.START_MENU,
       });
       return ctx.scene.leave();
   }
@@ -166,8 +168,9 @@ postLinksScene.enter(async (ctx) => {
       {
         parse_mode: "HTML",
         reply_markup: {
-          keyboard: [[{ text: "❌ Cancel" }]],
-          resize_keyboard: true,
+          inline_keyboard: [
+            [{ text: "❌ Cancel", callback_data: "cancel_setup" }],
+          ],
         },
       }
     );

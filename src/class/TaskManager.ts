@@ -452,11 +452,23 @@ class TaskManager {
       const interactionsCollection =
         getCollection<ITaskLink>("interactXTaskLinks");
 
+      // Lấy thông tin người dùng để biết tất cả username của họ
+      const usersCollection = getCollection("interactXTgUsers");
+      const userData = await usersCollection.findOne({
+        userId: telegramUserId,
+      });
+
+      // Danh sách username của người dùng hiện tại (để lọc ra khỏi kết quả)
+      const userXUsernames = userData?.registeredUsernames || [];
+
       // Lấy tất cả các post từ thành viên với interactionCount < requiredInteractions
+      // Loại bỏ các bài đăng thuộc về chính người dùng này (bất kỳ username nào của họ)
       const memberPosts = await postsCollection
         .find({
           type: "member",
           interactionCount: { $lt: requiredInteractions },
+          // Thêm điều kiện để loại bỏ các bài đăng của người dùng hiện tại
+          username: { $nin: userXUsernames },
         })
         .toArray();
 
@@ -546,8 +558,25 @@ class TaskManager {
     try {
       const postsCollection = getCollection<IXPost>("interactXTgPosts");
 
-      // Xây dựng query để lọc các post từ admin và loại trừ các postId đã sử dụng
-      const query: any = { type: "admin" };
+      // Lấy thông tin người dùng để biết tất cả username của họ
+      let userXUsernames: string[] = [];
+      if (telegramUserId) {
+        const usersCollection = getCollection("interactXTgUsers");
+        const userData = await usersCollection.findOne({
+          userId: telegramUserId,
+        });
+        userXUsernames = userData?.registeredUsernames || [];
+      }
+
+      // Xây dựng query để lọc các post từ admin, loại trừ các postId đã sử dụng,
+      // và loại bỏ các bài đăng của chính người dùng
+      const query: any = {
+        type: "admin",
+        // Nếu có thông tin username của người dùng, loại bỏ các bài đăng của họ
+        ...(userXUsernames.length > 0
+          ? { username: { $nin: userXUsernames } }
+          : {}),
+      };
 
       // Nếu có telegramUserId và xUsername, loại bỏ các link người dùng đã tương tác
       let previouslyInteractedPostIds = new Set<string>();

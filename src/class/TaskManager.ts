@@ -51,38 +51,40 @@ class TaskManager {
           task: null,
           links: [],
           success: false,
-          message: "Không tìm thấy cài đặt hệ thống",
+          message: "System settings not found",
         };
       }
 
       // Kiểm tra nếu người dùng đã có nhiệm vụ chưa hoàn thành
-      const existingTask = await this.getUncompletedTask(
+      const uncompletedTasks = await this.getAllUncompletedTask(
         telegramUserId,
         xUsername
       );
-      if (existingTask && existingTask._id) {
-        const taskLinks = await this.getTaskLinks(existingTask._id.toString());
-        return {
-          task: existingTask,
-          links: taskLinks,
-          success: true,
-          message: "Người dùng đã có nhiệm vụ chưa hoàn thành",
-        };
+      if (uncompletedTasks && uncompletedTasks.length > 0) {
+        const existingTask = uncompletedTasks[0]; // Lấy task đầu tiên trong danh sách
+        if (existingTask && existingTask._id) {
+          const taskLinks = await this.getTaskLinks(
+            existingTask._id.toString()
+          );
+          return {
+            task: existingTask,
+            links: taskLinks,
+            success: true,
+            message: "User already has uncompleted tasks",
+          };
+        }
       }
 
       // Kiểm tra số lượng link khả dụng trong hệ thống trước khi tạo nhiệm vụ
-      const availableMemberLinks = await this.getAvailableMemberLinksCount(
-        settings.minimumLinksForTask
-      );
+      const availableMemberLinks = await this.getAvailableMemberLinksCount();
       const availableAdminLinks = await this.getAvailableAdminLinksCount();
 
       // Tính số link khả dụng cho nhiệm vụ
-      let memberLinksForTask = Math.min(
-        availableMemberLinks,
-        settings.minimumLinksForTask
-      );
-      let memberLinkShortage =
-        settings.minimumLinksForTask - memberLinksForTask;
+      const minLinksForTask = settings.minimumLinksForTask;
+
+      let memberLinksForTask = Math.min(availableMemberLinks, minLinksForTask);
+
+      let memberLinkShortage = minLinksForTask - memberLinksForTask;
 
       // Số link admin cần để bù đắp thiếu hụt từ member links
       let adminLinksForMinimum =
@@ -90,22 +92,30 @@ class TaskManager {
           ? Math.min(memberLinkShortage, availableAdminLinks)
           : 0;
 
-      // Số link admin còn lại cho phần additionalLinks sau khi đã sử dụng cho minimumLinks
-      let remainingAdminLinks =
-        settings.additionalLinkSource === "admin"
-          ? Math.min(
-              availableAdminLinks - adminLinksForMinimum,
-              settings.additionalLinks
-            )
-          : 0;
+      // Số link bổ sung sẽ sử dụng, phụ thuộc vào nguồn
+      let additionalLinksToUse = 0;
+      if (settings.additionalLinkSource === "admin") {
+        // Nếu nguồn là admin, sử dụng số link admin còn lại
+        additionalLinksToUse = Math.min(
+          availableAdminLinks - adminLinksForMinimum,
+          settings.additionalLinks
+        );
+      } else if (settings.additionalLinkSource === "member") {
+        // Nếu nguồn là member, sử dụng số link member còn lại
+        additionalLinksToUse = Math.min(
+          availableMemberLinks - memberLinksForTask,
+          settings.additionalLinks
+        );
+      }
 
       // Tổng số link thực tế có thể sử dụng
       const totalAvailableTaskLinks =
-        memberLinksForTask + adminLinksForMinimum + remainingAdminLinks;
+        memberLinksForTask + adminLinksForMinimum + additionalLinksToUse;
 
-      // Tổng số link được yêu cầu theo cài đặt
+      // Tổng số link được yêu cầu theo cài đặt (minimum is required, additional is optional)
       const totalRequiredLinks =
         settings.minimumLinksForTask + settings.additionalLinks;
+      const minimumRequiredLinks = settings.minimumLinksForTask;
 
       logger.info(
         `Số link hiện có: ${
@@ -113,10 +123,10 @@ class TaskManager {
         } (Member: ${availableMemberLinks}, Admin: ${availableAdminLinks})`
       );
       logger.info(
-        `Phân bổ: ${memberLinksForTask} member links + ${adminLinksForMinimum} admin bổ sung cho minimum + ${remainingAdminLinks} admin cho additional`
+        `Phân bổ: ${memberLinksForTask} member links + ${adminLinksForMinimum} admin bổ sung cho minimum + ${additionalLinksToUse} links cho additional (nguồn: ${settings.additionalLinkSource})`
       );
       logger.info(
-        `Tổng link có thể dùng: ${totalAvailableTaskLinks}/${totalRequiredLinks} theo yêu cầu (Minimum: ${settings.minimumLinksForTask}, Additional: ${settings.additionalLinks})`
+        `Tổng link có thể dùng: ${totalAvailableTaskLinks}/${totalRequiredLinks} theo yêu cầu (Minimum: ${settings.minimumLinksForTask} required, Additional: ${settings.additionalLinks} optional)`
       );
 
       // Nếu không đủ link tối thiểu (minimumLinks), thông báo cho người dùng
@@ -128,11 +138,16 @@ class TaskManager {
           task: null,
           links: [],
           success: false,
-          message: `Hiện tại hệ thống không có đủ link để tạo nhiệm vụ mới (Có ${
+          message: `Not enough suitable links available for this user (Currently have ${
             memberLinksForTask + adminLinksForMinimum
-          }/${settings.minimumLinksForTask} link). Vui lòng thử lại sau.`,
+          }/${
+            settings.minimumLinksForTask
+          } minimum required links). Please try again later.`,
         };
       }
+
+      // At this point we have at least the minimum required links, so we can create the task
+      // even if we don't have all the additional links
 
       // Lấy số thứ tự nhiệm vụ mới
       const taskNumber = await this.getNextTaskNumber(telegramUserId);
@@ -141,7 +156,7 @@ class TaskManager {
       const usableAdditionalLinks = Math.max(
         0,
         Math.min(
-          settings.additionalLinks,
+          additionalLinksToUse,
           totalAvailableTaskLinks - settings.minimumLinksForTask
         )
       );
@@ -176,7 +191,7 @@ class TaskManager {
           task: null,
           links: [],
           success: false,
-          message: "Không thể tạo nhiệm vụ mới",
+          message: "Unable to create new task",
         };
       }
 
@@ -202,7 +217,7 @@ class TaskManager {
           task: null,
           links: [],
           success: false,
-          message: "Không có đủ link để phân bổ cho nhiệm vụ",
+          message: `No suitable links available for user ${xUsername}. The system currently has ${totalAvailableTaskLinks}/${settings.minimumLinksForTask} links. Please try again later. (Note: Links from your own accounts can be counted)`,
         };
       }
 
@@ -223,15 +238,15 @@ class TaskManager {
         task: createdTask || null,
         links,
         success: true,
-        message: "Đã tạo nhiệm vụ mới thành công",
+        message: "New task created successfully",
       };
     } catch (error) {
-      logger.error(`Lỗi khi tạo nhiệm vụ: ${error}`);
+      logger.error(`Error creating task: ${error}`);
       return {
         task: null,
         links: [],
         success: false,
-        message: `Lỗi khi tạo nhiệm vụ: ${error}`,
+        message: `Error creating task: ${error}`,
       };
     }
   }
@@ -265,19 +280,21 @@ class TaskManager {
   /**
    * Lấy nhiệm vụ chưa hoàn thành của người dùng
    */
-  async getUncompletedTask(
+  async getAllUncompletedTask(
     telegramUserId: string,
     xUsername: string
-  ): Promise<ITask | null> {
+  ): Promise<ITask[] | null> {
     try {
       const tasksCollection = getCollection<ITask>("interactXTasks");
 
       // Tìm nhiệm vụ có trạng thái "todo"
-      return await tasksCollection.findOne({
-        telegramUserId,
-        xUsername,
-        status: "todo",
-      });
+      return await tasksCollection
+        .find({
+          telegramUserId,
+          xUsername,
+          status: "todo",
+        })
+        .toArray();
     } catch (error) {
       logger.error(`Lỗi khi lấy nhiệm vụ chưa hoàn thành: ${error}`);
       return null;
@@ -318,10 +335,10 @@ class TaskManager {
   private async assignLinksToTask(
     taskId: ObjectId,
     minimumLinks: number,
-    additionalLinks: number,
-    selectionMethod: string,
-    additionalLinkSource: string,
-    requiredInteractions: number,
+    additionalLinks: number, // Số link bổ sung đã được điều chỉnh
+    selectionMethod: string, // Chế độ chọn link
+    additionalLinkSource: string, // Nguồn link bổ sung
+    requiredInteractions: number, // Số lần tương tác cần đạt được
     telegramUserId: string,
     xUsername: string
   ): Promise<ITaskLink[]> {
@@ -329,7 +346,7 @@ class TaskManager {
       // Khởi tạo Set để theo dõi các postId đã được sử dụng
       const usedPostIds = new Set<string>();
 
-      // Lấy các link để phân bổ, loại bỏ các link người dùng đã tương tác
+      // Lấy các link member cho phần minimumLinks
       const memberLinks = await this.getEligibleMemberLinks(
         minimumLinks,
         selectionMethod,
@@ -347,9 +364,9 @@ class TaskManager {
         minimumLinks - memberLinks.length
       );
 
-      // Nếu thiếu link từ thành viên, bổ sung bằng link admin nếu cần
+      // Nếu thiếu link từ thành viên, bổ sung bằng link admin
       let extraAdminLinks: IXPost[] = [];
-      if (memberLinksShortage > 0 && additionalLinkSource === "admin") {
+      if (memberLinksShortage > 0) {
         extraAdminLinks = await this.getExtraAdminLinks(
           memberLinksShortage,
           selectionMethod,
@@ -362,47 +379,72 @@ class TaskManager {
       // Thêm postId của các extra admin links vào danh sách đã sử dụng
       extraAdminLinks.forEach((link) => usedPostIds.add(link.postId));
 
-      // Tính toán số link admin bổ sung có thể thêm vào (không trùng với link đã sử dụng)
-      const remainingAdditionalLinksCount = Math.min(
-        additionalLinks,
-        // Số link admin có thể sử dụng = số link admin thực tế trừ đi số đã dùng để bổ sung cho member
-        (await this.getAvailableAdminLinksCount()) - extraAdminLinks.length
-      );
+      // Lấy các link bổ sung (additional links) tùy theo nguồn
+      let additionalTypeLinks: IXPost[] = [];
 
-      // Lấy admin links cho phần additionalLinks, đảm bảo không trùng với extraAdminLinks
-      const adminLinks = await this.getEligibleAdminLinks(
-        remainingAdditionalLinksCount,
-        selectionMethod,
-        usedPostIds, // Truyền danh sách postId đã sử dụng để loại bỏ
-        telegramUserId,
-        xUsername
-      );
+      if (additionalLinks > 0) {
+        // Chỉ xử lý khi có yêu cầu link bổ sung
+        if (additionalLinkSource === "admin") {
+          // Lấy admin links cho phần additionalLinks
+          additionalTypeLinks = await this.getEligibleAdminLinks(
+            additionalLinks,
+            selectionMethod,
+            usedPostIds,
+            telegramUserId,
+            xUsername
+          );
+        } else if (additionalLinkSource === "member") {
+          // Lấy thêm member links cho phần additionalLinks
+          additionalTypeLinks = await this.getEligibleMemberLinks(
+            additionalLinks,
+            selectionMethod,
+            requiredInteractions,
+            telegramUserId,
+            xUsername,
+            usedPostIds
+          );
+        }
+      }
 
+      // Log thông tin về số lượng link đã phân bổ
+      const additionalSourceText =
+        additionalLinkSource === "admin" ? "admin" : "member";
       logger.info(
-        `Phân bổ link: ${memberLinks.length} member links + ${
+        `[${xUsername}] - Phân bổ link: ${memberLinks.length} member links + ${
           extraAdminLinks.length
         } extra admin links + ${
-          adminLinks.length
-        } additional admin links (Tổng: ${
-          memberLinks.length + extraAdminLinks.length + adminLinks.length
-        })`
+          additionalTypeLinks.length
+        } additional ${additionalSourceText} links (Tổng: ${
+          memberLinks.length +
+          extraAdminLinks.length +
+          additionalTypeLinks.length
+        }/${minimumLinks} minimum + ${additionalLinks} additional)`
       );
 
-      // Kết hợp các link
-      const allLinks = [...memberLinks, ...extraAdminLinks, ...adminLinks];
+      // Kết hợp tất cả các link
+      const allLinks = [
+        ...memberLinks,
+        ...extraAdminLinks,
+        ...additionalTypeLinks,
+      ];
 
       if (allLinks.length === 0) {
-        logger.warn("Không có link nào để phân bổ cho nhiệm vụ");
+        logger.warn(`No suitable links found for user ${xUsername}`);
         return [];
       }
 
       // Kiểm tra nếu số lượng link khả dụng không đủ yêu cầu tối thiểu
       if (allLinks.length < minimumLinks) {
+        // We need at least the minimum number of links to create a task
         logger.warn(
-          `Không đủ link để tạo nhiệm vụ: ${allLinks.length}/${minimumLinks}`
+          `Not enough links for task ${xUsername}: Have ${allLinks.length}/${minimumLinks} minimum required links`
         );
         return [];
       }
+
+      // At this point we have at least the minimum required number of links to create the task
+
+      // Các link đã đủ yêu cầu tối thiểu, tiếp tục xử lý
 
       // Do đã kiểm tra đủ link trước khi gọi hàm này, nên không cần điều chỉnh nữa
 
@@ -410,6 +452,7 @@ class TaskManager {
       const taskLinks: ITaskLink[] = [];
       const taskLinksCollection =
         getCollection<ITaskLink>("interactXTaskLinks");
+      const postsCollection = getCollection<IXPost>("interactXTgPosts");
 
       for (const link of allLinks) {
         const taskLink: ITaskLink = {
@@ -418,7 +461,6 @@ class TaskManager {
           postUrl: link.postUrl,
           type: link.type || "member", // Sử dụng loại mặc định nếu không có
           interactionCount: 0, // Ban đầu chưa có tương tác nào
-          requiredInteractions, // Số lần tương tác cần đạt được
           status: "pending", // Trạng thái ban đầu là đang chờ
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -426,6 +468,12 @@ class TaskManager {
 
         await taskLinksCollection.insertOne(taskLink);
         taskLinks.push(taskLink);
+
+        // Tăng pendingTaskCount cho post
+        await postsCollection.updateOne(
+          { _id: link._id },
+          { $inc: { pendingTaskCount: 1 } }
+        );
       }
 
       // Cập nhật totalLinks trong bảng interactXTasks
@@ -451,7 +499,8 @@ class TaskManager {
     selectionMethod: string,
     requiredInteractions: number,
     telegramUserId: string,
-    xUsername: string
+    xUsername: string,
+    excludePostIds: Set<string> = new Set()
   ): Promise<IXPost[]> {
     try {
       const postsCollection = getCollection<IXPost>("interactXTgPosts");
@@ -467,12 +516,17 @@ class TaskManager {
       // Danh sách username của người dùng hiện tại (để lọc ra khỏi kết quả)
       const userXUsernames = userData?.registeredUsernames || [];
 
-      // Lấy tất cả các post từ thành viên với interactionCount < requiredInteractions
+      // Lấy tất cả các post từ thành viên với interactionCount + pendingTaskCount < requiredInteractionCount
       // Loại bỏ các bài đăng thuộc về chính người dùng này (bất kỳ username nào của họ)
       const memberPosts = await postsCollection
         .find({
           type: "member",
-          interactionCount: { $lt: requiredInteractions },
+          $expr: {
+            $lt: [
+              { $add: ["$interactionCount", "$pendingTaskCount"] },
+              "$requiredInteractionCount",
+            ],
+          },
           // Thêm điều kiện để loại bỏ các bài đăng của người dùng hiện tại
           username: { $nin: userXUsernames },
         })
@@ -504,13 +558,15 @@ class TaskManager {
         previousInteractions.map((interaction) => interaction.postId)
       );
 
-      // Lọc các bài đăng chưa đủ tương tác và chưa được người dùng tương tác
+      // Lọc các bài đăng chưa đủ tương tác, chưa được người dùng tương tác, và không nằm trong danh sách loại trừ
       const eligiblePosts = memberPosts.filter(
-        (post) => !previouslyInteractedPostIds.has(post.postId)
+        (post) =>
+          !previouslyInteractedPostIds.has(post.postId) &&
+          !excludePostIds.has(post.postId)
       );
 
       logger.info(
-        `Tìm thấy ${memberPosts.length} member links khả dụng, ${previouslyInteractedPostIds.size} đã tương tác trước đó, còn lại ${eligiblePosts.length} có thể sử dụng`
+        `[${xUsername}] - Tìm thấy ${memberPosts.length} member links khả dụng, ${previouslyInteractedPostIds.size} đã tương tác trước đó, còn lại ${eligiblePosts.length} có thể sử dụng (Yêu cầu: ${count} link)`
       );
 
       // Sắp xếp theo phương thức đã chọn
@@ -527,10 +583,14 @@ class TaskManager {
       } else if (selectionMethod === "random") {
         sortedPosts = this.shuffleArray([...eligiblePosts]);
       } else if (selectionMethod === "least-interactions") {
-        // Ưu tiên link chưa đủ tương tác, sắp xếp interactionCount tăng dần
-        sortedPosts = eligiblePosts.sort(
-          (a, b) => (a.interactionCount || 0) - (b.interactionCount || 0)
-        );
+        // Ưu tiên link chưa đủ tương tác, sắp xếp tổng interactionCount và pendingTaskCount tăng dần
+        sortedPosts = eligiblePosts.sort((a, b) => {
+          const aTotalInteractions =
+            (a.interactionCount || 0) + (a.pendingTaskCount || 0);
+          const bTotalInteractions =
+            (b.interactionCount || 0) + (b.pendingTaskCount || 0);
+          return aTotalInteractions - bTotalInteractions;
+        });
       } else {
         // Mặc định là oldest
         sortedPosts = eligiblePosts.sort(
@@ -578,6 +638,13 @@ class TaskManager {
       // và loại bỏ các bài đăng của chính người dùng
       const query: any = {
         type: "admin",
+        // Chỉ lấy những bài đăng chưa đủ tương tác
+        $expr: {
+          $lt: [
+            { $add: ["$interactionCount", "$pendingTaskCount"] },
+            "$requiredInteractionCount",
+          ],
+        },
         // Nếu có thông tin username của người dùng, loại bỏ các bài đăng của họ
         ...(userXUsernames.length > 0
           ? { username: { $nin: userXUsernames } }
@@ -632,40 +699,46 @@ class TaskManager {
         query.postId = { $nin: Array.from(allExcludedPostIds) };
       }
 
-      // Lấy các post từ admin
-      let adminPosts: IXPost[] = [];
+      // Lấy tất cả các post từ admin thỏa mãn điều kiện
+      const adminPosts = await postsCollection.find(query).toArray();
+
+      logger.info(
+        `[${xUsername || "N/A"}] - Tìm thấy ${
+          adminPosts.length
+        } admin links khả dụng sau khi lọc các điều kiện (Yêu cầu: ${count} link)`
+      );
+
+      // Sắp xếp theo phương thức đã chọn
+      let sortedPosts: IXPost[] = [];
 
       if (selectionMethod === "newest") {
-        adminPosts = await postsCollection
-          .find(query)
-          .sort({ createdAt: -1 })
-          .limit(count)
-          .toArray();
+        sortedPosts = adminPosts.sort(
+          (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+        );
       } else if (selectionMethod === "oldest") {
-        adminPosts = await postsCollection
-          .find(query)
-          .sort({ createdAt: 1 })
-          .limit(count)
-          .toArray();
+        sortedPosts = adminPosts.sort(
+          (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+        );
       } else if (selectionMethod === "random") {
-        const allAdminPosts = await postsCollection.find(query).toArray();
-        adminPosts = this.shuffleArray(allAdminPosts).slice(0, count);
+        sortedPosts = this.shuffleArray([...adminPosts]);
       } else if (selectionMethod === "least-interactions") {
-        // Lấy tất cả các post admin và sắp xếp theo interactionCount tăng dần
-        const allAdminPosts = await postsCollection.find(query).toArray();
-        adminPosts = allAdminPosts
-          .sort((a, b) => (a.interactionCount || 0) - (b.interactionCount || 0))
-          .slice(0, count);
+        // Ưu tiên link chưa đủ tương tác, sắp xếp tổng interactionCount và pendingTaskCount tăng dần
+        sortedPosts = adminPosts.sort((a, b) => {
+          const aTotalInteractions =
+            (a.interactionCount || 0) + (a.pendingTaskCount || 0);
+          const bTotalInteractions =
+            (b.interactionCount || 0) + (b.pendingTaskCount || 0);
+          return aTotalInteractions - bTotalInteractions;
+        });
       } else {
         // Mặc định là oldest
-        adminPosts = await postsCollection
-          .find(query)
-          .sort({ createdAt: 1 })
-          .limit(count)
-          .toArray();
+        sortedPosts = adminPosts.sort(
+          (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+        );
       }
 
-      return adminPosts;
+      // Lấy số lượng cần thiết
+      return sortedPosts.slice(0, count);
     } catch (error) {
       logger.error(`Lỗi khi lấy link từ admin: ${error}`);
       return [];
@@ -698,19 +771,21 @@ class TaskManager {
 
   /**
    * Đếm số lượng link của thành viên có sẵn trong hệ thống
-   * @param requiredInteractions Số lượng tương tác yêu cầu cho mỗi link
    * @returns Số lượng link khả dụng
    */
-  private async getAvailableMemberLinksCount(
-    requiredInteractions: number
-  ): Promise<number> {
+  private async getAvailableMemberLinksCount(): Promise<number> {
     try {
       const postsCollection = getCollection<IXPost>("interactXTgPosts");
 
-      // Đếm số lượng post từ thành viên với interactionCount < requiredInteractions
+      // Đếm số lượng post từ thành viên với interactionCount + pendingTaskCount < requiredInteractionCount
       const count = await postsCollection.countDocuments({
         type: "member",
-        interactionCount: { $lt: requiredInteractions },
+        $expr: {
+          $lt: [
+            { $add: ["$interactionCount", "$pendingTaskCount"] },
+            "$requiredInteractionCount",
+          ],
+        },
       });
 
       return count;
@@ -728,9 +803,15 @@ class TaskManager {
     try {
       const postsCollection = getCollection<IXPost>("interactXTgPosts");
 
-      // Đếm số lượng post từ admin
+      // Đếm số lượng post từ admin với interactionCount + pendingTaskCount < requiredInteractionCount
       const count = await postsCollection.countDocuments({
         type: "admin",
+        $expr: {
+          $lt: [
+            { $add: ["$interactionCount", "$pendingTaskCount"] },
+            "$requiredInteractionCount",
+          ],
+        },
       });
 
       return count;
@@ -816,12 +897,6 @@ class TaskManager {
       if (completed) {
         // Kiểm tra xem link có chuyển từ pending sang completed không
         const newInteractionCount = taskLink.interactionCount + 1;
-        const newStatus =
-          newInteractionCount >= taskLink.requiredInteractions
-            ? "completed"
-            : "pending";
-        const statusChanged =
-          taskLink.status === "pending" && newStatus === "completed";
 
         // Tăng interactionCount trong bảng interactXTaskLinks
         await taskLinksCollection.updateOne(
@@ -829,27 +904,27 @@ class TaskManager {
           {
             $set: {
               interactionCount: newInteractionCount,
-              status: newStatus,
+              status: "completed",
               updatedAt: new Date(),
             },
           }
         );
 
         // Chỉ tăng interactionCount trong bảng interactXTgPosts khi link được chuyển từ pending sang completed
-        if (statusChanged) {
+        if (taskLink.status === "pending") {
           await postsCollection.updateOne(
             { postId },
             {
-              $inc: { interactionCount: 1 },
+              $inc: { interactionCount: 1, pendingTaskCount: -1 },
               $set: { updatedAt: new Date() },
             }
           );
           logger.info(
-            `Đã tăng số tương tác cho bài đăng ${postId} (Link chuyển từ pending sang completed)`
+            `Đã tăng interactionCount và giảm pendingTaskCount cho bài đăng ${postId} (Link chuyển từ pending sang completed)`
           );
         } else {
           logger.info(
-            `Đã cập nhật interactionCount cho taskLink ${postId} (Link vẫn giữ trạng thái ${newStatus})`
+            `Đã cập nhật interactionCount cho taskLink ${postId} (Link vẫn giữ trạng thái pending)`
           );
         }
       }
@@ -926,21 +1001,21 @@ class TaskManager {
     telegramUserId: string,
     xUsername: string
   ): Promise<{
-    task: ITask | null;
-    links: ITaskLink[];
+    tasks: ITask[];
+    allLinks: ITaskLink[];
     pendingLinks: number;
     completedLinks: number;
     success: boolean;
     message?: string;
   }> {
     try {
-      // Lấy nhiệm vụ hiện tại của người dùng
-      const task = await this.getUncompletedTask(telegramUserId, xUsername);
+      // Lấy tất cả nhiệm vụ hiện tại của người dùng
+      const tasks = await this.getAllUncompletedTask(telegramUserId, xUsername);
 
-      if (!task) {
+      if (!tasks || tasks.length === 0) {
         return {
-          task: null,
-          links: [],
+          tasks: [],
+          allLinks: [],
           pendingLinks: 0,
           completedLinks: 0,
           success: false,
@@ -948,37 +1023,38 @@ class TaskManager {
         };
       }
 
-      // Lấy danh sách link của nhiệm vụ
-      const links = task._id
-        ? await this.getTaskLinks(task._id.toString())
-        : [];
+      // Lấy danh sách link của tất cả nhiệm vụ
+      let allLinks: ITaskLink[] = [];
+      for (const task of tasks) {
+        if (task._id) {
+          const taskLinks = await this.getTaskLinks(task._id.toString());
+          allLinks = [...allLinks, ...taskLinks];
+        }
+      }
 
-      console.log("links: ", links);
+      console.log("allLinks: ", allLinks);
 
       // Đếm số link đã hoàn thành và đang chờ
-      const pendingLinks = links.filter(
+      const pendingLinks = allLinks.filter(
         (link) => link.status === "pending"
       ).length;
-      const completedLinks = links.filter(
+      const completedLinks = allLinks.filter(
         (link) => link.status === "completed"
       ).length;
 
       return {
-        task,
-        links,
+        tasks,
+        allLinks,
         pendingLinks,
         completedLinks,
         success: true,
-        message:
-          task.status === "done"
-            ? "Nhiệm vụ đã hoàn thành"
-            : "Nhiệm vụ đang trong tiến trình",
+        message: "Danh sách các nhiệm vụ đang trong tiến trình",
       };
     } catch (error) {
       logger.error(`Lỗi khi lấy chi tiết nhiệm vụ: ${error}`);
       return {
-        task: null,
-        links: [],
+        tasks: [],
+        allLinks: [],
         pendingLinks: 0,
         completedLinks: 0,
         success: false,

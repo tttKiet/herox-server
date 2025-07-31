@@ -175,12 +175,18 @@ async function checkInteractionsForAllUsernames(
           username
         );
 
-        if (!taskDetails.success || !taskDetails.task) {
+        if (
+          !taskDetails.success ||
+          !taskDetails.tasks ||
+          taskDetails.tasks.length === 0
+        ) {
           logger.warn(`No active task found for @${username}`);
           continue;
         }
 
-        const { task, links } = taskDetails;
+        // Lấy task đầu tiên trong danh sách và các links
+        const task = taskDetails.tasks[0];
+        const links = taskDetails.allLinks;
         const initialCompletedLinks = task.completedLinks;
         const wasAlreadyCompleted = task.status === "done";
         let newlyCompletedLinks = 0;
@@ -218,8 +224,9 @@ async function checkInteractionsForAllUsernames(
 
         const isNowCompleted =
           updatedTaskDetails.success &&
-          updatedTaskDetails.task &&
-          updatedTaskDetails.task.status === "done"
+          updatedTaskDetails.tasks &&
+          updatedTaskDetails.tasks.length > 0 &&
+          updatedTaskDetails.tasks[0].status === "done"
             ? true
             : false;
 
@@ -265,7 +272,7 @@ async function checkInteractionsForAllUsernames(
       for (const result of results) {
         const {
           username,
-          task,
+          task, // task still comes from the results array which we populated manually
           initialCompletedLinks,
           newlyCompletedLinks,
           isNowCompleted,

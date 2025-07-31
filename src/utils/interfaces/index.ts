@@ -163,7 +163,6 @@ export interface ITaskLink {
   postUrl: string; // URL của bài đăng
   type: "member" | "admin"; // Loại link: thành viên hoặc admin
   interactionCount: number; // Số lần đã được tương tác
-  requiredInteractions: number; // Số lần tương tác cần đạt được
   status: "pending" | "completed"; // Trạng thái: đang chờ hoặc đã hoàn thành
   createdAt: Date;
   updatedAt: Date;

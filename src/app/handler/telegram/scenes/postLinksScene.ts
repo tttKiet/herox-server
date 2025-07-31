@@ -384,8 +384,9 @@ async function promptForLinks(
 
       if (
         taskDetails.success &&
-        taskDetails.task &&
-        taskDetails.task.status === "done"
+        taskDetails.tasks &&
+        taskDetails.tasks.length > 0 &&
+        taskDetails.tasks[0].status === "done"
       ) {
         // Task is completed but no credits, let system update the credits
         await ctx.reply(
@@ -395,7 +396,7 @@ async function promptForLinks(
         );
 
         // Try to update credits
-        if (taskDetails.task._id) {
+        if (taskDetails.tasks[0]._id) {
           try {
             // This should trigger credit update in the system
             const updatedCreditInfo = await taskManager.getUserCreditInfo(
@@ -603,8 +604,9 @@ async function processUserLinks(
 
       if (
         taskDetails.success &&
-        taskDetails.task &&
-        taskDetails.task.status === "done"
+        taskDetails.tasks &&
+        taskDetails.tasks.length > 0 &&
+        taskDetails.tasks[0].status === "done"
       ) {
         await ctx.reply(
           `⏳ <b>Processing your completed task</b>\n\n` +

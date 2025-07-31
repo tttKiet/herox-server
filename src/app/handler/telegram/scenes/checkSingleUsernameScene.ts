@@ -176,7 +176,11 @@ async function checkInteractionsForUsername(
       username
     );
 
-    if (!taskDetails.success || !taskDetails.task) {
+    if (
+      !taskDetails.success ||
+      !taskDetails.tasks ||
+      taskDetails.tasks.length === 0
+    ) {
       await ctx.reply(
         `❌ <b>No active task found for @${username}</b>\n\nYou don't have any active task for this username. Use /get to get new tasks.`,
         {
@@ -187,13 +191,14 @@ async function checkInteractionsForUsername(
       return ctx.scene.leave();
     }
 
-    const { task, links } = taskDetails;
+    const task = taskDetails.tasks[0]; // Lấy task đầu tiên
+    const allLinks = taskDetails.allLinks || [];
     const initialCompletedLinks = task.completedLinks;
     const wasAlreadyCompleted = task.status === "done";
     let newlyCompletedLinks = 0;
 
     // Check interactions for each pending link
-    const pendingLinks = links.filter((link) => link.status === "pending");
+    const pendingLinks = allLinks.filter((link) => link.status === "pending");
 
     if (pendingLinks.length > 0) {
       await ctx.reply(
@@ -227,8 +232,12 @@ async function checkInteractionsForUsername(
     );
 
     let isNowCompleted = false;
-    if (updatedTaskDetails.success && updatedTaskDetails.task) {
-      isNowCompleted = updatedTaskDetails.task.status === "done";
+    if (
+      updatedTaskDetails.success &&
+      updatedTaskDetails.tasks &&
+      updatedTaskDetails.tasks.length > 0
+    ) {
+      isNowCompleted = updatedTaskDetails.tasks[0].status === "done";
     }
 
     // Get task credit info

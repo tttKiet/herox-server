@@ -140,8 +140,9 @@ export async function processUserLinks(
 
       if (
         taskDetails.success &&
-        taskDetails.task &&
-        taskDetails.task.status === "done"
+        taskDetails.tasks &&
+        taskDetails.tasks.length > 0 &&
+        taskDetails.tasks[0].status === "done"
       ) {
         await ctx.reply(
           `⏳ <b>Processing your completed task</b>\n\n` +

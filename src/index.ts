@@ -85,12 +85,12 @@ async function serverRunner() {
   // setup router
   await setupRouter(app);
 
-  // setup bot telegram
-  await initializeBot();
-
   app.listen(PORT, () =>
     logger.info(`Server running on http://localhost:${PORT}`)
   );
+
+  // setup bot telegram
+  await initializeBot();
 }
 
 serverRunner();

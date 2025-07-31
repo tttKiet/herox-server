@@ -1,86 +1,34 @@
-You are a Web3 content writer. Create a tweet-style post using the following input:
+👋 Hi everyone, it's Trang again!
 
-- A unique **opening line** that reflects the selected `style`.
-- A clear perspective based on `angle`.
-- Tone must match `tone`.
-- You may use emojis based on `emojiMode`.
-- If `themeLine` is true, include a memorable thematic slogan near the end.
-- Output must not start with cliché openings like "Imagine a world" or "Dive into".
+Just saw that @TheoriqAI's public sale is nearly 2x oversubscribed, reaching $5.68M already! 🔥
 
-Use natural, varied sentence structures to avoid repetition across posts.
+If you're still not familiar with the $THQ token, here's a quick breakdown on why it’s becoming one of the most powerful utility tokens in the autonomous agent economy.
 
-- Project: {{ $('Code1').all()[0].json.project }} 
-- Topic: {{ $('Code1').all()[0].json.topic }}
-- Language:{{ $('Code1').all()[0].json.lang }}
-- Tone: {{ $('Code1').all()[0].json.tone }}
-- Nametag: {{ $('Code1').all()[0].json.nametag }}
-- Opening Style: {{ $('Code1').all()[0].json.style }}
-- Emoji Mode:  {{ $('Code1').all()[0].json.emojiMode }}
-- Theme Line: {{ $('Code1').all()[0].json.themeLine }}
-- Angle:{{ $('Code1').all()[0].json.angle }}
+💠 Tokenomics:
+Total supply: 1 billion $THQ
+Distribution:
+▫️ 18% to the community
+▫️ 24% to the core team
+▫️ 30% to investors
+▫️ 28% to the treasury
+(This aligns closely with leading decentralized projects.)
 
-Your job is to write a high-quality social media post using:
+💡 Key Utilities of $THQ in Theoriq’s agent economy:
+1️⃣ Staking ($THQ → sTHQ)
 
-— The project document  
-— The user’s topic  
-— The project’s X (Twitter) handle
-— STARTING STYLE
-— ANGLE/PERSPECTIVE
+Stake your $THQ to earn APY rewards and receive a share of protocol fees.
 
----
+2️⃣ Locking ($sTHQ → αTHQ)
 
-✳️ OUTPUT REQUIREMENTS:
+Lock sTHQ to mint αTHQ — the longer you lock, the higher your weight. αTHQ holders are also eligible for ecosystem token rewards from partners.
 
-- Write in **English only**
-- Output ONLY the final post — no explanation
-- Total length: **240 to 500 words**
-- Each paragraph: **max 120 words**
-- Add a **line break between paragraphs** for readability
-- Mention the X handle (below) **once** in the body — NEVER at the top
-- Use subheadings or short bullets if it fits the content
-- Start creatively — not just restating the topic
-- Do NOT hallucinate. Use only the content in the document
-- Max one hashtag, only if truly useful
+3️⃣ Delegation (αTHQ → Agents)
 
-Use this angle to guide the entire post. Make sure the content focuses clearly on this specific aspect:
+You can delegate your αTHQ to AI agents to boost their performance, earn additional rewards, and share risks. Think of it like vouching for an agent, if they perform well, both of you win.
 
-> {{ $('Code1').all()[0].json.angle }}
+With this multi-layered utility design, plus burn mechanisms, partner demand, and protocol-level utility, $THQ is positioned for strong long-term value.
 
-Avoid generalizations. Don't mention other aspects not related to this angle.
+As Theoriq’s autonomous agent economy continues to gain adoption, the real-world use cases for $THQ will only grow.
 
-🔹 Emoji Rules:
-
-- If `emojiMode` is "none", do not include any emoji.
-- If `emojiMode` is "one", use exactly 1 emoji in the entire post.
-- If `emojiMode` is "auto", you may use up to 2 emojis naturally if they fit.
-- If `emojiMode` is "more-than-ten", use emoji **liberally** (up to 10–12), especially to emphasize bullet points, reactions, or structure.  
-  Make the post fun, expressive, or highly visual. Emojis must still match the topic (tech, finance, community, etc.).
-
-# 🎨 Emoji Menu can use (optional use):
-🌟 = something impressive or standout  
-🔥 = hype, exciting news  
-🤣 = funny reaction  
-👀 = curious / watching  
-💡 = idea or insight  
-😅 = awkward or ironic moment  
-👏 = celebration or support  
-🤔 = interesting point  
-🚀 = progress, growth  
-🐍 = shady or sketchy  
-🍀 = good luck or randomness  
-🧠 = smart or deep idea  
-😭 = strong FOMO, surprise, or meme   
-😎 = confident or cool  
-💥 = boom effect or sudden twist  
-💤 = boring or tired
-
-Avoid repeating the same emoji more than once.
-
----
-
-📄 PROJECT DOCUMENT:  
-{{ $json.content }}
-
-
-Now write the post using the information above.`
-};
+🌐 Follow the team for updates:
+@ronbodkin | @PeiChen01 | @davidm_ller | @incyd__

@@ -11,6 +11,12 @@ import {
   IUserCredit,
 } from "../utils/interfaces";
 import SettingsManager from "./SettingsManager";
+import postService from "../services/postService";
+import {
+  extractPostIdAndUsernameFromLink,
+  isXPostLinks,
+} from "../app/handler/telegram/scenes/postLinks/linkUtils";
+import interactXSettingsService from "../services/interactXSettingsService";
 
 /**
  * Lớp quản lý nhiệm vụ tương tác
@@ -66,7 +72,7 @@ class TaskManager {
 
       // Kiểm tra số lượng link khả dụng trong hệ thống trước khi tạo nhiệm vụ
       const availableMemberLinks = await this.getAvailableMemberLinksCount(
-        settings.requiredInteractionsPerLink
+        settings.minimumLinksForTask
       );
       const availableAdminLinks = await this.getAvailableAdminLinksCount();
 
@@ -184,7 +190,7 @@ class TaskManager {
         usableAdditionalLinks, // Sử dụng số link bổ sung thực tế có thể sử dụng
         settings.selectionMethod,
         settings.additionalLinkSource,
-        settings.requiredInteractionsPerLink,
+        settings.minimumLinksForTask,
         telegramUserId,
         xUsername
       );
@@ -929,9 +935,6 @@ class TaskManager {
   }> {
     try {
       // Lấy nhiệm vụ hiện tại của người dùng
-
-      console.log({ telegramUserId, xUsername });
-
       const task = await this.getUncompletedTask(telegramUserId, xUsername);
 
       if (!task) {
@@ -1009,86 +1012,22 @@ class TaskManager {
         xUsername,
       });
 
-      // Nếu không có credit nào, kiểm tra xem người dùng có hoàn thành task nào chưa
-      if (!userCredit || userCredit.availableCredits <= 0) {
-        // Kiểm tra xem có nhiệm vụ đã hoàn thành không để tạo credit nếu cần
-        const taskDetails = await this.getTaskDetails(
-          telegramUserId,
-          xUsername
-        );
-
-        if (!taskDetails.success || !taskDetails.task) {
-          return {
-            success: false,
-            message: `No credits available for @${xUsername}. Complete tasks to earn credits.`,
-          };
-        }
-        if (taskDetails.task.status !== "done") {
-          return {
-            success: false,
-            message:
-              "You need to complete your current task before posting links",
-          };
-        }
-
-        // Nếu có nhiệm vụ đã hoàn thành mà không có credit, cập nhật credit
-        if (!userCredit && taskDetails.task._id) {
-          await this.updateUserCreditsOnTaskCompletion(taskDetails.task);
-
-          // Kiểm tra lại credit sau khi cập nhật
-          const updatedCredit = await creditsCollection.findOne({
-            telegramUserId,
-            xUsername,
-          });
-
-          if (!updatedCredit || updatedCredit.availableCredits <= 0) {
-            return {
-              success: false,
-              message: "Error updating your credits. Please try again later.",
-            };
-          }
-        } else {
-          return {
-            success: false,
-            message: `No credits available for @${xUsername}. Complete more tasks to earn credits.`,
-          };
-        }
-      }
-
-      // Kiểm tra số lượng link được phép đăng
-      if (links.length > userCredit!.availableCredits) {
+      // Nếu không có credit hoặc credit không đủ
+      if (!userCredit) {
         return {
           success: false,
-          message: `You can only post ${
-            userCredit!.availableCredits
-          } links with your current credits.`,
+          message: `No credits available for @${xUsername}. Complete tasks to earn credits.`,
         };
-      }
+      } else {
+        const currentCredits = userCredit?.availableCredits;
+        const userRequiredUse = links.length;
 
-      // Save links to database
-      const postsCollection = getCollection<IXPost>("interactXTgPosts");
-      const savedLinks: string[] = [];
-
-      for (const link of links) {
-        // Generate unique post ID
-        const postId = new ObjectId().toString();
-
-        // Create post object with maxInteractionCount from userCredit
-        const post: IXPost = {
-          postId,
-          username: xUsername, // Use username field instead of xUsername
-          postUrl: link,
-          type: "member", // Type is member since it's from a user
-          interactionCount: 0, // Initialize interaction counter to 0
-          maxInteractionCount: userCredit?.lastMinimumLinksForTask, // Use lastMinimumLinksForTask from credits
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
-        // Save to database
-        await postsCollection.insertOne(post);
-        savedLinks.push(postId);
-        logger.success(`Saved post ${postId} for user ${xUsername}`);
+        if (currentCredits && currentCredits - userRequiredUse < 0) {
+          return {
+            success: false,
+            message: `Not enough credits available for @${xUsername}. Complete tasks to earn more credits.`,
+          };
+        }
       }
 
       // Giảm credit đã sử dụng
@@ -1102,6 +1041,48 @@ class TaskManager {
           $set: { updatedAt: new Date() },
         }
       );
+
+      const botSetting = await interactXSettingsService.getSettings();
+      if (!botSetting) {
+        logger.error("Bot settings not found");
+        return {
+          success: false,
+          message: "Bot settings not found",
+        };
+      }
+
+      const linkCreates: IXPost[] = links
+        .map((link) => {
+          if (isXPostLinks(link)) {
+            const { postId } = extractPostIdAndUsernameFromLink(link);
+            if (!postId) {
+              logger.warn(`Post ID not found in link: ${link}`);
+              return null; // Trả về null nếu không tìm thấy postId
+            }
+
+            const result: IXPost = {
+              postId: postId,
+              postUrl: link,
+              type: "member", // Giả sử đây là link từ thành viên
+              username: xUsername.toLowerCase(),
+              interactionCount: 0, // Ban đầu chưa có tương tác nào
+              pendingTaskCount: 0, // Ban đầu chưa có nhiệm vụ nào pending
+              requiredInteractionCount: botSetting.minimumLinksForTask,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+
+            return result;
+          } else {
+            logger.warn(`Invalid link format: ${link}`);
+            return null; // Trả về null nếu link không hợp lệ
+          }
+        })
+        .filter((link) => link !== null) as IXPost[];
+
+      // save links to the database
+      const postDocs = await postService.createOrUpdatePosts(linkCreates);
+      console.log("postDocs: ", postDocs);
 
       return {
         success: true,

@@ -3,6 +3,8 @@ import { ObjectId } from "mongodb";
 import { logger } from "../utils/logger";
 import { getCollection } from "../utils/mongoDb";
 import { ITelegramUser, IXPost, IInteraction } from "../utils/interfaces";
+import postService from "../services/postService";
+import interactXSettingsService from "../services/interactXSettingsService";
 
 interface RegisterUserParams {
   userId: string;
@@ -131,68 +133,6 @@ class InteractXTgBot {
     } catch (error: any) {
       logger.error(`Error getting user X usernames: ${error.message}`);
       return [];
-    }
-  }
-
-  /**
-   * Save a post from X to the database
-   */
-  async savePost({
-    postId,
-    postUrl,
-    username,
-    content,
-    type = "member", // Default to member type if not specified
-  }: SavePostParams): Promise<IXPost> {
-    try {
-      const postsCollection = getCollection<IXPost>("interactXTgPosts");
-
-      // Check if post already exists
-      const existingPost = await postsCollection.findOne({ postId });
-
-      if (existingPost) {
-        // Update existing post
-        await postsCollection.updateOne(
-          { postId },
-          {
-            $set: {
-              postUrl,
-              username,
-              content,
-              type,
-              updatedAt: new Date(),
-            },
-          }
-        );
-
-        logger.success(`Post ${postId} updated for ${username}`);
-        return {
-          ...existingPost,
-          postUrl,
-          username,
-          content,
-          updatedAt: new Date(),
-        };
-      } else {
-        // Create new post
-        const newPost: IXPost = {
-          postId,
-          postUrl,
-          username,
-          content,
-          interactionCount: 0, // Initialize interaction count
-          type, // Add post type (member/admin)
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
-        await postsCollection.insertOne(newPost);
-        logger.success(`New post ${postId} saved for ${username}`);
-        return newPost;
-      }
-    } catch (error: any) {
-      logger.error(`Error saving post: ${error.message}`);
-      throw new Error(`Failed to save post: ${error.message}`);
     }
   }
 
@@ -376,6 +316,7 @@ class InteractXTgBot {
   }> {
     try {
       // First verify if user has completed enough interactions
+
       const verification = await this.verifyInteractions({
         telegramUserId,
         xUsername,
@@ -412,11 +353,10 @@ class InteractXTgBot {
           .toString(36)
           .substring(7)}`;
 
-        const post = await this.savePost({
+        const post = await postService.createOrUpdatePost({
           postId,
           postUrl,
           username: xUsername,
-          content: `Mock content for ${postUrl}`,
         });
 
         processedPosts.push(post);
@@ -573,6 +513,7 @@ class InteractXTgBot {
       if (!postUrls || postUrls.length === 0) {
         return { success: false, error: "No URLs provided" };
       }
+      const settings = await interactXSettingsService.getSettings();
 
       const addedPosts: IXPost[] = [];
 
@@ -586,7 +527,7 @@ class InteractXTgBot {
           }
 
           // Save post with admin type
-          const post = await this.savePost({
+          const post = await postService.createOrUpdatePost({
             postId,
             postUrl: url,
             username: "admin", // Use generic admin username

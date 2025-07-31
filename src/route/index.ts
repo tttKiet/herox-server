@@ -1,12 +1,13 @@
 import { Router } from "express";
-import XHandler from "../app/handler/x";
 import AdminHandler from "../app/handler/admin";
-import ManagerHandler from "../app/handler/manager";
 import AiHandler from "../app/handler/ai";
-import AuthHandler from "../app/handler/auth/auth.index";
 import ChatHandler from "../app/handler/ai/chats";
+import AuthHandler from "../app/handler/auth/auth.index";
+import ManagerHandler from "../app/handler/manager";
+import SettingsHandler from "../app/handler/manager/settingsHandler";
+import TelegramHandler from "../app/handler/telegram/TelegramHandler";
+import XHandler from "../app/handler/x";
 import InteractPostHandler from "../app/handler/x/interactPosts";
-import telegramRouter from "./telegramBot";
 
 const xHandler = new XHandler();
 const aiHandler = new AiHandler();
@@ -15,11 +16,9 @@ const managerHandler = new ManagerHandler();
 const authHandler = new AuthHandler();
 const chatHandler = new ChatHandler();
 const interactPostHandler = new InteractPostHandler();
+const telegramHandler = new TelegramHandler();
 
 const mainRouter = Router();
-
-// Telegram Bot routes
-mainRouter.use("/api/v1/telegram", telegramRouter);
 
 // ai
 mainRouter.get("/api/v1/ai/chat/:chatId", aiHandler.getChat);
@@ -142,5 +141,29 @@ mainRouter.delete(
   managerHandler.memberMdw,
   managerHandler.deleteProjects
 );
+
+// Telegram users
+mainRouter.get("/api/v1/telegram/users", telegramHandler.getTgUsers);
+mainRouter.get("/api/v1/telegram/user-credits", telegramHandler.getUserCredits);
+mainRouter.get("/api/v1/telegram/tasks", telegramHandler.getTasks);
+mainRouter.patch(
+  "/api/v1/telegram/tasks/:taskId",
+  telegramHandler.updateTaskStatus
+);
+
+mainRouter.get("/api/v1/telegram/posts", telegramHandler.getTgPosts);
+
+// Task Links API
+mainRouter.get("/api/v1/telegram/task-links", telegramHandler.getTaskLinks);
+mainRouter.post(
+  "/api/v1/telegram/task-links/update-status",
+  telegramHandler.updateTaskLinkStatus
+);
+
+// Settings API
+mainRouter.get("/api/v1/settings", SettingsHandler.getSettings);
+mainRouter.put("/api/v1/settings", SettingsHandler.updateSettings);
+
+//
 
 export default mainRouter;

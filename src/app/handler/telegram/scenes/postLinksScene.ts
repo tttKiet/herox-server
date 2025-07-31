@@ -710,45 +710,6 @@ async function processUserLinks(
 }
 
 /**
- * Check task completion and process link posting
- */
-async function checkAndProcessLink(
-  ctx: any,
-  telegramUserId: string,
-  xUsername: string
-): Promise<void> {
-  try {
-    // Display loading message
-    await ctx.reply(`⏳ Checking completion status for @${xUsername}...`);
-
-    // Create task manager
-    const taskManager = new TaskManager();
-
-    // Check if we have links in the message
-    if (ctx.message && ctx.message.text && isXPostLinks(ctx.message.text)) {
-      const links = extractXLinks(ctx.message.text);
-      await processUserLinks(ctx, telegramUserId, xUsername, links);
-      return;
-    }
-
-    // Otherwise, prompt for links
-    await promptForLinks(ctx, telegramUserId, xUsername);
-  } catch (error) {
-    logger.error(`Error checking task completion: ${error}`);
-    await ctx.reply(
-      `❌ <b>Error</b>\n\nFailed to check completion status: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
-      {
-        parse_mode: "HTML",
-        reply_markup: KEYBOARDS.MAIN,
-      }
-    );
-    return ctx.scene.leave();
-  }
-}
-
-/**
  * Save user links to the system
  */
 async function saveUserLinks(
@@ -831,7 +792,7 @@ async function saveUserLinks(
       links = links.slice(0, creditInfo.availableCredits);
     }
 
-    // Save links
+    // Use credit decreasement method to save links
     const result = await taskManager.saveUserLinks(
       telegramUserId,
       xUsername,
@@ -1029,7 +990,7 @@ async function autoProcessUserLinks(
             ? usernameLinks.slice(0, creditInfo.availableCredits)
             : usernameLinks;
 
-        // Save links to the system
+        // Decreasement available credits by links
         const result = await taskManager.saveUserLinks(
           telegramUserId,
           username,

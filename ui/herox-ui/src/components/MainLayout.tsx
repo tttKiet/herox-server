@@ -7,6 +7,7 @@ import {
   HiTag,
   HiFolderOpen,
   HiOutlineChatBubbleBottomCenterText,
+  HiOutlineCog,
 } from "react-icons/hi2";
 import { RiTwitterXFill } from "react-icons/ri";
 import Link from "next/link";
@@ -61,6 +62,42 @@ const navBarLeft: MenuProps["items"] = [
       },
     ],
   },
+  {
+    type: "group",
+    label: <div className="text-xs font-bold">TELEGRAM BOT</div>,
+    children: [
+      {
+        label: <Link href="/telegram-users">Users</Link>,
+        icon: <HiOutlineChatBubbleBottomCenterText />,
+        key: "TG_USERS",
+      },
+      {
+        label: <Link href="/user-credits">User Credits</Link>,
+        icon: <RiTwitterXFill />,
+        key: "USER_CREDITS",
+      },
+      {
+        label: <Link href="/tasks">Tasks</Link>,
+        icon: <HiOutlineChatBubbleBottomCenterText />,
+        key: "TASKS",
+      },
+      {
+        label: <Link href="/task-posts">Task Posts</Link>,
+        icon: <HiOutlineChatBubbleBottomCenterText />,
+        key: "TASK_POSTS",
+      },
+      {
+        label: <Link href="/task-links">Task Links</Link>,
+        icon: <RiTwitterXFill />,
+        key: "TASK_LINKS",
+      },
+      {
+        label: <Link href="/settings">Settings</Link>,
+        icon: <HiOutlineCog />,
+        key: "SETTINGS",
+      },
+    ],
+  },
 ];
 
 function MainLayout({ children }: { children: React.ReactNode }) {
@@ -72,11 +109,17 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   // Map pathname to menu key
   const getSelectedKey = () => {
     if (pathname === "/") return ["DASH_BOARD"];
-    if (pathname.startsWith("/prompt")) return ["PROMPT"];
-    if (pathname.startsWith("/topic")) return ["TOPIC"];
-    if (pathname.startsWith("/project")) return ["PROJECT"];
-    if (pathname.startsWith("/chat-response")) return ["CHAT_RESPONSE"];
-    if (pathname.startsWith("/interact-posts")) return ["INTERACT_POSTS"];
+    if (pathname?.startsWith("/prompt")) return ["PROMPT"];
+    if (pathname?.startsWith("/topic")) return ["TOPIC"];
+    if (pathname?.startsWith("/project")) return ["PROJECT"];
+    if (pathname?.startsWith("/chat-response")) return ["CHAT_RESPONSE"];
+    if (pathname?.startsWith("/interact-posts")) return ["INTERACT_POSTS"];
+    if (pathname?.startsWith("/telegram-users")) return ["TG_USERS"];
+    if (pathname?.startsWith("/user-credits")) return ["USER_CREDITS"];
+    if (pathname?.startsWith("/task-posts")) return ["TASK_POSTS"];
+    if (pathname?.startsWith("/task-links")) return ["TASK_LINKS"];
+    if (pathname?.startsWith("/tasks")) return ["TASKS"];
+    if (pathname?.startsWith("/settings")) return ["SETTINGS"];
     return [];
   };
 

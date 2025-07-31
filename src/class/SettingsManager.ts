@@ -30,9 +30,9 @@ class SettingsManager {
       const defaultSettings: IInteractXSettings = {
         minimumLinksForTask: 20, // Số link thấp nhất để hoàn thành nhiệm vụ
         additionalLinks: 5, // Số link thêm vào
-        selectionMethod: "oldest", // Cách lấy bài đăng: cũ nhất
+        selectionMethod: "least-interactions", // Cách lấy bài đăng: cũ nhất
         additionalLinkSource: "admin", // Nguồn link bổ sung: admin
-        requiredInteractionsPerLink: 20, // Số lần tương tác cần thiết cho mỗi link
+        minimumLinkForAdmin: 10, // Số link cần thiết cho admin
         updatedAt: new Date(),
         updatedBy: "system", // Người cập nhật mặc định
       };

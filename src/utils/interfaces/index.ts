@@ -99,15 +99,16 @@ export interface IProject {
   updatedAt: Date;
 }
 
+// bot telegram
 export interface IXPost {
   _id?: ObjectId;
   postId: string; // X post ID
   postUrl: string; // X post URL
   username: string; // X username that posted
-  content?: string; // Optional post content
   type?: "member" | "admin"; // Type of post: member or admin
   interactionCount: number; // Number of times this post has been interacted with
-  maxInteractionCount?: number; // Maximum number of interactions allowed for this post
+  requiredInteractionCount?: number | null; // yêu cầu tương tác
+  pendingTaskCount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -128,10 +129,10 @@ export interface IInteraction {
 export interface IInteractXSettings {
   _id?: ObjectId;
   minimumLinksForTask: number; // Số link thấp nhất để hoàn thành nhiệm vụ (n)
+  minimumLinkForAdmin: number; // Số link cần thiết cho admin
   additionalLinks: number; // Số link thêm vào (t)
-  selectionMethod: "newest" | "oldest" | "random"; // Cách lấy bài đăng: mới nhất, cũ nhất, ngẫu nhiên
+  selectionMethod: "newest" | "oldest" | "random" | "least-interactions"; // Cách lấy bài đăng: mới nhất, cũ nhất, ngẫu nhiên
   additionalLinkSource: "member" | "admin"; // Nguồn link bổ sung: từ thành viên hoặc admin
-  requiredInteractionsPerLink: number; // Số lần tương tác cần thiết cho mỗi link (mặc định: minimumLinksForTask)
   updatedAt: Date;
   updatedBy: string; // ID của admin đã cập nhật cấu hình
 }
@@ -182,4 +183,25 @@ export interface IUserCredit {
   lastMinimumLinksForTask: number; // Số minimumLinksForTask gần nhất, dùng cho maxInteractionCount
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface IGetTgPostsQuery {
+  postId?: string;
+  username?: string;
+  type?: string;
+  taskDate?: string;
+  page?: string;
+  limit?: string;
+}
+
+export interface IGetTaskLinksQuery {
+  taskId?: string;
+  postId?: string;
+  type?: string;
+  status?: string;
+  taskDate?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: string;
+  limit?: string;
 }

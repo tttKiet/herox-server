@@ -161,11 +161,12 @@ export interface ITaskLink {
   taskId: ObjectId; // ID của nhiệm vụ mà link này thuộc về
   postId: string; // ID của bài đăng X
   postUrl: string; // URL của bài đăng
+  tgPostId?: ObjectId; // ID của document trong interactXTgPosts
   type: "member" | "admin"; // Loại link: thành viên hoặc admin
-  interactionCount: number; // Số lần đã được tương tác
-  status: "pending" | "completed"; // Trạng thái: đang chờ hoặc đã hoàn thành
+  status: "pending" | "completed" | "canceled"; // Trạng thái: đang chờ, đã hoàn thành, hoặc đã hủy
   createdAt: Date;
   updatedAt: Date;
+  canceledAt?: Date; // Thời gian hủy link (nếu có)
 }
 
 /**

@@ -3,7 +3,8 @@ import { message } from "telegraf/filters";
 import { logger } from "../../../utils/logger";
 import { configDotenv } from "dotenv";
 import {
-  checkInteractionScene,
+  // checkInteractionScene,
+  checkInteractionsScene,
   creditsScene,
   deleteUsernameScene,
   getPostsScene,
@@ -32,6 +33,9 @@ type BotContext = any;
 class TelegramBotHandler {
   private bot: Telegraf<BotContext>;
   private stage: Scenes.Stage<BotContext>;
+
+  // Maps to track users waiting for specific inputs
+  private waitingForCheckUsername = new Map<number, boolean>();
 
   /**
    * Tin nhắn chào mừng tiêu chuẩn
@@ -63,7 +67,8 @@ class TelegramBotHandler {
     this.stage = new Scenes.Stage<BotContext>([
       setupUserScene,
       getPostsScene,
-      checkInteractionScene,
+      // checkInteractionScene, // Legacy scene
+      checkInteractionsScene, // New refactored scene
       checkSingleUsernameScene, // Add new scene for checking single username
       postLinksScene,
       deleteUsernameScene,
@@ -162,7 +167,9 @@ class TelegramBotHandler {
       ctx.reply(
         "📚 <b>X Interaction Bot Guide</b>\n\n" +
           `<b>1️⃣ ${BUTTONS.SETUP_PROFILE}</b>: Set up your profile and register X usernames\n\n` +
-          `<b>2️⃣ ${BUTTONS.GET_POSTS}</b>: Get a list of links to interact with for each username\n\n` +
+          `<b>2️⃣ ${BUTTONS.GET_POSTS}</b>: Get a list of links to interact with for each username\n` +
+          `   - Use /get to get posts for all usernames\n` +
+          `   - Use /get username to get posts only for a specific username\n\n` +
           `<b>3️⃣ ${BUTTONS.CHECK_INTERACTIONS}</b>: Check if you've completed all required interactions\n` +
           `   - Use /check to check all usernames\n` +
           `   - Use /check username to check a specific username\n\n` +
@@ -182,11 +189,27 @@ class TelegramBotHandler {
       this.handleSceneEnter(ctx, "setup-user");
     });
     this.bot.hears(BUTTONS.GET_POSTS, (ctx) => {
-      // Show the GET_POSTS_PAGE keyboard
-      ctx.reply("Loading posts menu...", {
-        reply_markup: KEYBOARDS.GET_POSTS_PAGE,
+      // Show the GET_POSTS_OPTIONS_PAGE keyboard
+      ctx.reply("Choose how you want to get posts:", {
+        reply_markup: KEYBOARDS.GET_POSTS_OPTIONS_PAGE,
       });
+    });
+
+    // New handlers for specific get posts options
+    this.bot.hears(BUTTONS.GET_POSTS_ALL, (ctx) => {
       this.handleSceneEnter(ctx, "get-posts");
+    });
+
+    this.bot.hears(BUTTONS.GET_POSTS_SINGLE, (ctx) => {
+      ctx.reply(
+        "Please enter the username you want to get posts for in this format:\n\n" +
+          "<code>username</code>\n\n" +
+          "Or use /cancel to cancel.",
+        {
+          parse_mode: "HTML",
+        }
+      );
+      ctx.session.waitingForUsername = true;
     });
     this.bot.hears(BUTTONS.CHECK_INTERACTIONS, (ctx) => {
       this.handleSceneEnter(ctx, "check-interaction");
@@ -226,9 +249,24 @@ class TelegramBotHandler {
     this.bot.command(COMMANDS.SETUP.substring(1), (ctx) =>
       this.handleSceneEnter(ctx, "setup-user")
     );
-    this.bot.command(COMMANDS.GET_POSTS.substring(1), (ctx) =>
-      this.handleSceneEnter(ctx, "get-posts")
-    );
+    this.bot.command(COMMANDS.GET_POSTS.substring(1), (ctx) => {
+      // Check if a username was provided as parameter
+      const text = ctx.message?.text || "";
+      const parts = text.split(" ");
+
+      if (parts.length > 1) {
+        // Username was provided - store it in context
+        const username = parts[1].toLowerCase().trim();
+        const state = { specificUsername: username };
+        logger.info(`Getting posts for specific username: ${username}`);
+
+        // Enter the get-posts scene with the specific username state
+        return this.handleSceneEnter(ctx, "get-posts", state);
+      }
+
+      // Enter the get-posts scene without specific username
+      return this.handleSceneEnter(ctx, "get-posts");
+    });
     this.bot.command(COMMANDS.CHECK.substring(1), (ctx) =>
       this.handleCheckCommand(ctx)
     );
@@ -294,10 +332,42 @@ class TelegramBotHandler {
           this.handleSceneEnter(ctx, "setup-user");
           break;
 
-        case "nav_get_posts":
-          // Enter get posts scene
-          await ctx.answerCbQuery("Loading posts...");
+        case "nav_get_posts_menu":
+          // Show Get Posts menu options
+          await ctx.answerCbQuery("Loading posts menu...");
+          ctx.reply("Choose how you want to get posts:", {
+            reply_markup: KEYBOARDS.GET_POSTS_OPTIONS_PAGE,
+          });
+          break;
+
+        case "nav_get_posts_all":
+          // Get posts for all usernames
+          await ctx.answerCbQuery("Loading posts for all usernames...");
           this.handleSceneEnter(ctx, "get-posts");
+          break;
+
+        case "nav_get_posts_single":
+          // Show prompt for entering username
+          await ctx.answerCbQuery("Loading username prompt...");
+          const usernameMsg = await ctx.reply(
+            "Please enter the username you want to get posts for in this format:\n\n" +
+              "<code>username</code>\n\n" +
+              "Or click 'Cancel' to go back.",
+            {
+              parse_mode: "HTML",
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "❌ Cancel", callback_data: "nav_close" }],
+                ],
+              },
+            }
+          );
+
+          // Store message ID to delete it later
+          ctx.session.usernamePromptMsgId = usernameMsg.message_id;
+
+          // Enter a special scene or set a flag to handle the username input
+          ctx.session.waitingForUsername = true;
           break;
 
         case "nav_my_links":
@@ -313,7 +383,9 @@ class TelegramBotHandler {
           ctx.reply(
             "📚 <b>X Interaction Bot Guide</b>\n\n" +
               `<b>1️⃣ ${BUTTONS.SETUP_PROFILE}</b>: Set up your profile and register X usernames\n\n` +
-              `<b>2️⃣ ${BUTTONS.GET_POSTS}</b>: Get a list of links to interact with for each username\n\n` +
+              `<b>2️⃣ ${BUTTONS.GET_POSTS}</b>: Get a list of links to interact with for each username\n` +
+              `   - Use /get to get posts for all usernames\n` +
+              `   - Use /get username to get posts only for a specific username\n\n` +
               `<b>3️⃣ ${BUTTONS.CHECK_INTERACTIONS}</b>: Check if you've completed all required interactions\n` +
               `   - Use /check to check all usernames\n` +
               `   - Use /check username to check a specific username\n\n` +
@@ -326,6 +398,37 @@ class TelegramBotHandler {
               reply_markup: NAV_KEYBOARDS.START_MENU,
             }
           );
+          break;
+
+        case "nav_check_interactions_all":
+          // Check interactions for all usernames
+          await ctx.answerCbQuery(
+            "Loading interaction check for all usernames..."
+          );
+          this.handleSceneEnter(ctx, "check-interactions");
+          break;
+
+        case "nav_check_interactions_single":
+          // Show prompt for entering username to check
+          await ctx.answerCbQuery(
+            "Loading username prompt for interaction check..."
+          );
+          const checkUsernameMsg = await ctx.reply(
+            "Please enter the username you want to check interactions for in this format:\n\n" +
+              "<code>username</code>\n\n" +
+              "Or click 'Cancel' to go back.",
+            {
+              parse_mode: "HTML",
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "❌ Cancel", callback_data: "nav_close" }],
+                ],
+              },
+            }
+          );
+
+          // Start listening for the username input
+          this.waitingForCheckUsername.set(ctx.from.id, true);
           break;
 
         case "nav_close":
@@ -370,6 +473,64 @@ class TelegramBotHandler {
 
       const text = ctx.message.text;
 
+      // Check if we're waiting for a username input for get-posts
+      if (ctx.session.waitingForUsername) {
+        // Reset the flag
+        ctx.session.waitingForUsername = false;
+
+        // Delete the prompt message if we have its ID
+        if (ctx.session.usernamePromptMsgId) {
+          try {
+            await ctx.deleteMessage(ctx.session.usernamePromptMsgId);
+            delete ctx.session.usernamePromptMsgId;
+          } catch (err) {
+            logger.warn(`Failed to delete prompt message: ${err}`);
+          }
+        }
+
+        // Process the username
+        const username = text.trim().replace("@", "");
+        if (username) {
+          logger.info(`User provided username for get posts: ${username}`);
+
+          // Create state with specific username
+          const state = { specificUsername: username };
+
+          // Enter get-posts scene with the specific username
+          return this.handleSceneEnter(ctx, "get-posts", state);
+        } else {
+          await ctx.reply(
+            "Invalid username. Please try again with a valid username."
+          );
+          return;
+        }
+      }
+
+      // Check if we're waiting for a username input for check-interactions
+      if (this.waitingForCheckUsername.get(ctx.from.id)) {
+        // Reset the flag
+        this.waitingForCheckUsername.delete(ctx.from.id);
+
+        // Process the username
+        const username = text.trim().replace("@", "");
+        if (username) {
+          logger.info(
+            `User provided username for check interactions: ${username}`
+          );
+
+          // Create state with username
+          const state = { username: username };
+
+          // Enter check-interactions scene with the specific username
+          return this.handleSceneEnter(ctx, "check-interactions", state);
+        } else {
+          await ctx.reply(
+            "Invalid username. Please try again with a valid username."
+          );
+          return;
+        }
+      }
+
       // Check if text contains X links
       if (this.isXPostLinks(text)) {
         // Count the actual number of links in the message
@@ -413,18 +574,18 @@ class TelegramBotHandler {
           }
         }
 
-        // Customize message based on number of links
-        if (linkCount === 1) {
-          await ctx.reply(`✅ Detected 1 X link. Processing...`, {
-            reply_markup: NAV_KEYBOARDS.START_MENU,
-            parse_mode: "HTML",
-          });
-        } else {
-          await ctx.reply(`✅ Detected ${linkCount} X links. Processing...`, {
-            reply_markup: NAV_KEYBOARDS.START_MENU,
-            parse_mode: "HTML",
-          });
-        }
+        // // Customize message based on number of links
+        // if (linkCount === 1) {
+        //   await ctx.reply(`✅ Detected 1 X link. Processing...`, {
+        //     reply_markup: NAV_KEYBOARDS.START_MENU,
+        //     parse_mode: "HTML",
+        //   });
+        // } else {
+        //   await ctx.reply(`✅ Detected ${linkCount} X links. Processing...`, {
+        //     reply_markup: NAV_KEYBOARDS.START_MENU,
+        //     parse_mode: "HTML",
+        //   });
+        // }
 
         return this.handleSceneEnter(ctx, "post-links");
       }
@@ -537,16 +698,15 @@ class TelegramBotHandler {
           return;
         }
 
-        // Store username in scene state and enter check-single-username scene directly
-        // Don't use handleSceneEnter here as we need to pass state
+        // Store username in scene state and enter check-interactions scene with username
         logger.info(
-          `Entering check-single-username scene with username: ${username}`
+          `Entering check-interactions scene with username: ${username}`
         );
-        return ctx.scene.enter("check-single-username", { username });
+        return ctx.scene.enter("check-interactions", { username });
       }
 
       // If no username was provided, check all accounts
-      return this.handleSceneEnter(ctx, "check-interaction");
+      return this.handleSceneEnter(ctx, "check-interactions");
     } catch (error) {
       logger.error(`Error handling check command: ${error}`);
       await ctx.reply(

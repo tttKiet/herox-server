@@ -1,9 +1,8 @@
 /**
- * Index file for getPosts scene
+ * Index file for checkInteractions scene
  */
 import { Scenes } from "telegraf";
 import { message } from "telegraf/filters";
-import { logger } from "../../../../../utils/logger";
 import {
   BUTTONS,
   COMMANDS,
@@ -12,18 +11,19 @@ import {
 } from "../../../../../utils/constants/botCommands";
 import { NAV_KEYBOARDS } from "../../../../../utils/constants/navKeyboards";
 import { ITelegramUser } from "../../../../../utils/interfaces";
+import { logger } from "../../../../../utils/logger";
 import { getCollection } from "../../../../../utils/mongoDb";
-import { createTasksForAllUsernames } from "./taskHandler";
+import { checkInteractionsForAllUsernames } from "./interactionHandler";
 
 /**
- * Scene to get interaction tasks
+ * Scene to check interaction status
  */
-const getPostsScene = new Scenes.BaseScene<any>("get-posts");
+const checkInteractionsScene = new Scenes.BaseScene<any>("check-interactions");
 
 /**
  * Add cancel button handler
  */
-getPostsScene.action("cancel_posts", async (ctx) => {
+checkInteractionsScene.action("cancel_check", async (ctx) => {
   try {
     logger.info(`Cancel button clicked by user ${ctx.from?.id}`);
     await ctx.answerCbQuery("Operation cancelled");
@@ -48,7 +48,6 @@ getPostsScene.action("cancel_posts", async (ctx) => {
     await ctx.reply("Operation cancelled due to an error", {
       reply_markup: NAV_KEYBOARDS.START_MENU,
     });
-
     return ctx.scene.leave();
   }
 });
@@ -56,8 +55,16 @@ getPostsScene.action("cancel_posts", async (ctx) => {
 /**
  * Handler when entering the scene
  */
-getPostsScene.enter(async (ctx) => {
+checkInteractionsScene.enter(async (ctx) => {
   const telegramId = ctx.from?.id?.toString();
+  const username = ctx.scene.state?.username;
+
+  // Log scene enter for debugging
+  logger.info(
+    `Entered check-interactions scene. TelegramId: ${telegramId}, State: ${JSON.stringify(
+      ctx.scene.state
+    )}`
+  );
 
   // Check if user's ID is available
   if (!telegramId) {
@@ -77,14 +84,14 @@ getPostsScene.enter(async (ctx) => {
   }
 
   try {
-    // Get user data directly from database
+    // Get user data from database
     const usersCollection = getCollection<ITelegramUser>("interactXTgUsers");
     const userData = await usersCollection.findOne({ userId: telegramId });
 
     // Check if user hasn't set up profile
     if (!userData) {
       await ctx.reply(
-        `❌ You haven't set up your profile. Please use the ${COMMANDS.SETUP} command before getting tasks.`,
+        `❌ You haven't set up your profile. Please use the ${COMMANDS.SETUP} command before checking interactions.`,
         {
           reply_markup: {
             keyboard: [
@@ -104,7 +111,7 @@ getPostsScene.enter(async (ctx) => {
       userData.registeredUsernames.length === 0
     ) {
       await ctx.reply(
-        `❌ You haven't set up any X usernames. Please use the ${COMMANDS.SETUP} command to add your usernames before getting tasks.`,
+        `❌ You haven't set up any X usernames. Please use the ${COMMANDS.SETUP} command to add your usernames before checking interactions.`,
         {
           reply_markup: {
             keyboard: [
@@ -118,51 +125,43 @@ getPostsScene.enter(async (ctx) => {
       return ctx.scene.leave();
     }
 
-    // Record start time without showing a loading message
-    const startTime = Date.now();
-    // Store in scene state so it can be accessed in createTasksForAllUsernames
-    ctx.scene.state.startTime = startTime;
-
-    // Check if a specific username was requested
-    const specificUsername = ctx.scene.state.specificUsername;
-
-    if (specificUsername) {
-      // Verify that the username is in the user's registered usernames (case insensitive)
-      const isValidUsername = userData.registeredUsernames.some(
-        (username) => username.toLowerCase() === specificUsername.toLowerCase()
-      );
-
-      if (isValidUsername) {
-        // Create task only for the specific username
-        logger.info(`Creating task for specific username: ${specificUsername}`);
-        await createTasksForAllUsernames(
-          ctx,
-          userData.userId,
-          [specificUsername] // Pass only the specified username
-        );
-      } else {
-        // Username not found in user's registered usernames
+    // If specific username was provided, check only that username
+    if (username) {
+      // Verify if the username is registered to this user
+      if (!userData.registeredUsernames.includes(username)) {
         await ctx.reply(
-          `❌ The username @${specificUsername} is not registered in your profile. Please use one of your registered usernames.`,
+          `❌ Username @${username} is not registered in your profile. Please check your usernames with /profile command.`,
           {
-            parse_mode: "HTML",
-            reply_markup: NAV_KEYBOARDS.START_MENU,
+            reply_markup: KEYBOARDS.MAIN,
           }
         );
         return ctx.scene.leave();
       }
-    } else {
-      // No specific username provided, create tasks for all usernames
-      await createTasksForAllUsernames(
-        ctx,
-        userData.userId,
-        userData.registeredUsernames
+
+      // Show loading message
+      await ctx.reply(
+        `⏳ <b>Checking interactions for @${username}</b>\n\nPlease wait while we verify your interactions for this account...`,
+        { parse_mode: "HTML" }
       );
+
+      // Check interactions for the specific username
+      const { checkInteractionsForUsername } = require("./interactionHandler");
+      await checkInteractionsForUsername(ctx, telegramId, username);
+    } else {
+      // Check all usernames
+      await ctx.reply(
+        `⏳ <b>Checking interactions for all your accounts</b>\n\nPlease wait while we verify your interactions...`,
+        { parse_mode: "HTML" }
+      );
+
+      // Check interactions for all usernames
+
+      await checkInteractionsForAllUsernames(ctx, telegramId);
     }
   } catch (error) {
-    logger.error(`Error fetching user data: ${error}`);
+    logger.error(`Error in check-interactions scene: ${error}`);
     await ctx.reply(
-      `❌ Error retrieving your profile data. Please try again later.`,
+      `❌ Error retrieving account data. Please try again later.`,
       {
         reply_markup: KEYBOARDS.MAIN,
       }
@@ -171,4 +170,25 @@ getPostsScene.enter(async (ctx) => {
   }
 });
 
-export default getPostsScene;
+// Handle text messages
+checkInteractionsScene.on(message("text"), async (ctx) => {
+  const text = ctx.message.text;
+
+  // Just handle cancel for now
+  if (text === "❌ Cancel") {
+    await ctx.reply(MESSAGES.CANCEL_OPERATION, {
+      reply_markup: KEYBOARDS.MAIN,
+    });
+    return ctx.scene.leave();
+  }
+
+  // All other messages
+  await ctx.reply(
+    "Please wait while we check your interactions or use /cancel to exit.",
+    {
+      reply_markup: KEYBOARDS.MAIN,
+    }
+  );
+});
+
+export default checkInteractionsScene;

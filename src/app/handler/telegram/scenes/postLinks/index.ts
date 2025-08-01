@@ -24,39 +24,43 @@ import { promptForLinks } from "./creditHandler";
 const postLinksScene = new Scenes.BaseScene<any>("post-links");
 
 // Handler for callback queries from inline keyboards
-postLinksScene.action(/^(credits|profile|cancel)$/, async (ctx) => {
-  const action = ctx.match[1];
+postLinksScene.action(
+  /^(credits|profile|cancel|cancel_setup)$/,
+  async (ctx) => {
+    const action = ctx.match[1];
 
-  // Remove the inline keyboard
-  try {
-    await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
-  } catch (err) {
-    // Ignore errors if keyboard already removed
-  }
+    // Remove the inline keyboard
+    try {
+      await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+    } catch (err) {
+      // Ignore errors if keyboard already removed
+    }
 
-  // Handle the command
-  switch (action) {
-    case "credits":
-      await ctx.scene.leave();
-      // Directly execute the command instead of entering scene
-      return ctx.reply(`Use ${COMMANDS.CREDITS} to check your credits.`, {
-        reply_markup: KEYBOARDS.MAIN,
-      });
-    case "profile":
-      await ctx.scene.leave();
-      // Directly execute the command instead of entering scene
-      return ctx.reply(`Use ${COMMANDS.PROFILE} to view your profile.`, {
-        reply_markup: KEYBOARDS.MAIN,
-      });
-    case "cancel":
-    default:
-      await ctx.reply(`${MESSAGES.CANCEL_OPERATION}\n\n${MESSAGES.WELCOME}`, {
-        parse_mode: "HTML",
-        reply_markup: NAV_KEYBOARDS.START_MENU,
-      });
-      return ctx.scene.leave();
+    // Handle the command
+    switch (action) {
+      case "credits":
+        await ctx.scene.leave();
+        // Directly execute the command instead of entering scene
+        return ctx.reply(`Use ${COMMANDS.CREDITS} to check your credits.`, {
+          reply_markup: KEYBOARDS.MAIN,
+        });
+      case "profile":
+        await ctx.scene.leave();
+        // Directly execute the command instead of entering scene
+        return ctx.reply(`Use ${COMMANDS.PROFILE} to view your profile.`, {
+          reply_markup: KEYBOARDS.MAIN,
+        });
+      case "cancel":
+      case "cancel_setup":
+      default:
+        await ctx.reply(`${MESSAGES.CANCEL_OPERATION}\n\n${MESSAGES.WELCOME}`, {
+          parse_mode: "HTML",
+          reply_markup: NAV_KEYBOARDS.START_MENU,
+        });
+        return ctx.scene.leave();
+    }
   }
-});
+);
 
 // Handler when entering the scene
 postLinksScene.enter(async (ctx) => {
@@ -115,8 +119,6 @@ postLinksScene.enter(async (ctx) => {
     // Check if message contains links
     if (ctx.message && ctx.message.text && isXPostLinks(ctx.message.text)) {
       const links = extractXLinks(ctx.message.text);
-      console.log("message contains links");
-      console.log("links:", links);
 
       // Process links automatically without asking for username selection
       await autoProcessUserLinks(
@@ -144,9 +146,7 @@ postLinksScene.enter(async (ctx) => {
       {
         parse_mode: "HTML",
         reply_markup: {
-          inline_keyboard: [
-            [{ text: "❌ Cancel", callback_data: "cancel_setup" }],
-          ],
+          inline_keyboard: [[{ text: "❌ Cancel", callback_data: "cancel" }]],
         },
       }
     );
@@ -177,8 +177,13 @@ postLinksScene.on(message("text"), async (ctx) => {
     return ctx.scene.leave();
   }
 
-  // Check for cancel command
-  if (text.toLowerCase() === COMMANDS.CANCEL) {
+  // Check for cancel command - handle both /cancel and variations of "cancel"
+  if (
+    text.toLowerCase() === COMMANDS.CANCEL ||
+    text.toLowerCase() === "cancel" ||
+    text.toLowerCase() === "❌ cancel" ||
+    text.toLowerCase().includes("cancel")
+  ) {
     await ctx.reply(MESSAGES.CANCEL_OPERATION, {
       reply_markup: KEYBOARDS.MAIN,
     });
@@ -187,7 +192,11 @@ postLinksScene.on(message("text"), async (ctx) => {
 
   // If waiting for username selection
   if (ctx.session.usernameSelection) {
-    if (text === "❌ Cancel") {
+    if (
+      text === "❌ Cancel" ||
+      text === "Cancel" ||
+      text.toLowerCase() === "cancel"
+    ) {
       await ctx.reply(MESSAGES.CANCEL_OPERATION, {
         reply_markup: KEYBOARDS.MAIN,
       });
@@ -244,6 +253,19 @@ postLinksScene.on(message("text"), async (ctx) => {
 
   // If waiting for link input
   if (ctx.session.waitingForLinks && ctx.session.selectedUsername) {
+    // Check for cancel first before processing links
+    if (
+      text.toLowerCase() === COMMANDS.CANCEL ||
+      text.toLowerCase() === "cancel" ||
+      text.toLowerCase() === "❌ cancel" ||
+      text.toLowerCase().includes("cancel")
+    ) {
+      await ctx.reply(MESSAGES.CANCEL_OPERATION, {
+        reply_markup: KEYBOARDS.MAIN,
+      });
+      return ctx.scene.leave();
+    }
+
     // Parse and validate links
     const links = text
       .split("\n")

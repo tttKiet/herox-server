@@ -17,7 +17,7 @@ export async function processUserLinks(
 ): Promise<void> {
   try {
     // Display loading message
-    await ctx.reply(`⏳ Processing ${links.length} links for @${xUsername}...`);
+    // await ctx.reply(`⏳ Processing ${links.length} links for @${xUsername}...`);
 
     // Create task manager
     const taskManager = new TaskManager();
@@ -447,9 +447,6 @@ export async function autoProcessUserLinks(
   links: string[]
 ): Promise<void> {
   try {
-    // Display simple loading message
-    await ctx.reply(`✅ Detected ${links.length} links. Processing...`);
-
     // Create task manager
     const taskManager = new TaskManager();
 
@@ -627,7 +624,7 @@ export async function autoProcessUserLinks(
       const successAccounts = results.filter((r) => r.success);
       if (successAccounts.length > 0) {
         for (const result of successAccounts) {
-          summaryMessage += `✓ @${result.username}: ${result.processed} links saved\n`;
+          summaryMessage += `✓ @${result.username}: ${result.processed} links posted\n`;
         }
       }
 

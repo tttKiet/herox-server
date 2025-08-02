@@ -4,11 +4,19 @@ import puppeteer from "puppeteer";
 import GpmHandler from "../../../class/GpmHandler";
 import N8nHelper from "../../../class/N8nHelper";
 import Payment from "../../../class/Payment";
-import { IPost, IPostReg, IUserInteractPost } from "../../../utils/interfaces";
+import { ApiKeyTwitterManager } from "../../../class/ApiKeyTwitterManager";
+import {
+  IPost,
+  IPostReg,
+  IUserInteractPost,
+  IApiKeyTwitter,
+} from "../../../utils/interfaces";
 import { logger } from "../../../utils/logger";
 import { getCollection } from "../../../utils/mongoDb";
+import { InteractXTgBot } from "../../../class";
 
 const payment = new Payment();
+const interactX = new InteractXTgBot();
 
 class XHandler {
   constructor() {}
@@ -416,6 +424,38 @@ class XHandler {
       }
     } catch (err: any) {
       res.status(500).json({ ok: false, error: err.message });
+    }
+  };
+
+  // check interact post links
+  public checkInteractPostLinks: RequestHandler<Partial<any>> = async function (
+    req,
+    res
+  ) {
+    const { usernames, post } = req.body;
+
+    if (!usernames || !post) {
+      // logger.error("Missing input!");
+      res.status(400).json({ ok: false, message: "Missing input!" });
+      return;
+    }
+
+    try {
+      const data = await interactX.checkCommentPostX(usernames, post);
+      // console.log(lastAuthorUsername);
+      res.status(200).json({
+        ok: true,
+        data: data,
+      });
+
+      return;
+    } catch (err: any) {
+      console.error("Error:", err.message);
+      res.status(500).json({
+        ok: false,
+        error: err?.message || "Terminal server!",
+      });
+      return;
     }
   };
 }

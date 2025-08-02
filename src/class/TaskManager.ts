@@ -134,7 +134,8 @@ class TaskManager {
         memberLinksForTask + adminLinksForMinimum <
         settings.minimumLinksForTask
       ) {
-        console.log("not enough links for task");
+        // Comment out debug logs before production
+        // console.log("not enough links for task");
 
         return {
           task: null,
@@ -167,9 +168,10 @@ class TaskManager {
       const actualTotalLinks =
         settings.minimumLinksForTask + usableAdditionalLinks;
 
-      logger.info(
-        `Link sẽ sử dụng: ${settings.minimumLinksForTask} minimum + ${usableAdditionalLinks} additional = ${actualTotalLinks} links`
-      );
+      // Comment out debug logs before production
+      // logger.info(
+      //   `Link sẽ sử dụng: ${settings.minimumLinksForTask} minimum + ${usableAdditionalLinks} additional = ${actualTotalLinks} links`
+      // );
 
       // Tạo nhiệm vụ mới
       const newTask: ITask = {
@@ -235,7 +237,8 @@ class TaskManager {
         };
       } // Không cần kiểm tra số lượng link nữa vì đã kiểm tra trước khi tạo task
 
-      logger.success(`Đã tạo nhiệm vụ mới (${taskNumber}) cho ${xUsername}`);
+      // Comment out debug logs before production
+      // logger.success(`Đã tạo nhiệm vụ mới (${taskNumber}) cho ${xUsername}`);
 
       // Cập nhật totalLinks dựa trên số lượng link thực tế được phân bổ
       await tasksCollection.updateOne(
@@ -400,7 +403,7 @@ class TaskManager {
         // Chỉ xử lý khi có yêu cầu link bổ sung
         if (additionalLinkSource === "admin") {
           // Lấy admin links cho phần additionalLinks
-          console.log("usedPostIds: ", usedPostIds);
+          // console.log("usedPostIds: ", usedPostIds);
 
           additionalTypeLinks = await this.getEligibleAdminLinks(
             additionalLinks,
@@ -429,23 +432,25 @@ class TaskManager {
       // Kiểm tra xem có đủ links tối thiểu không
       const totalAvailableLinks = memberLinks.length + extraAdminLinks.length;
 
-      logger.info(
-        `[${xUsername}] - Phân bổ link: ${memberLinks.length} member links + ${
-          extraAdminLinks.length
-        } extra admin links + ${
-          additionalTypeLinks.length
-        } additional ${additionalSourceText} links (Tổng: ${
-          memberLinks.length +
-          extraAdminLinks.length +
-          additionalTypeLinks.length
-        }/${minimumLinks} minimum + ${additionalLinks} additional)`
-      );
+      // Comment out debug logs before production
+      // logger.info(
+      //   `[${xUsername}] - Phân bổ link: ${memberLinks.length} member links + ${
+      //     extraAdminLinks.length
+      //   } extra admin links + ${
+      //     additionalTypeLinks.length
+      //   } additional ${additionalSourceText} links (Tổng: ${
+      //     memberLinks.length +
+      //     extraAdminLinks.length +
+      //     additionalTypeLinks.length
+      //   }/${minimumLinks} minimum + ${additionalLinks} additional)`
+      // );
 
       // Kiểm tra nếu không đủ link tối thiểu, log cảnh báo rõ ràng hơn
       if (totalAvailableLinks < minimumLinks) {
-        logger.warn(
-          `[${xUsername}] - Không đủ link tối thiểu: Cần ${minimumLinks} link nhưng chỉ có ${totalAvailableLinks} link khả dụng`
-        );
+        // Comment out debug logs before production
+        // logger.warn(
+        //   `[${xUsername}] - Không đủ link tối thiểu: Cần ${minimumLinks} link nhưng chỉ có ${totalAvailableLinks} link khả dụng`
+        // );
 
         // Lưu thông tin về số link khả dụng để sử dụng trong thông báo lỗi
         (this as any).lastAssignmentStats = {
@@ -463,7 +468,8 @@ class TaskManager {
       ];
 
       if (allLinks.length === 0) {
-        logger.warn(`No suitable links found for user ${xUsername}`);
+        // Comment out debug logs before production
+        // logger.warn(`No suitable links found for user ${xUsername}`);
 
         // Lưu thông tin về số link khả dụng để sử dụng trong thông báo lỗi
         (this as any).lastAssignmentStats = {
@@ -478,9 +484,10 @@ class TaskManager {
       // Kiểm tra nếu số lượng link khả dụng không đủ yêu cầu tối thiểu
       if (allLinks.length < minimumLinks) {
         // We need at least the minimum number of links to create a task
-        logger.warn(
-          `Not enough links for task ${xUsername}: Have ${allLinks.length}/${minimumLinks} minimum required links. Available admin links: ${extraAdminLinks.length}, Available member links: ${memberLinks.length}`
-        );
+        // Comment out debug logs before production
+        // logger.warn(
+        //   `Not enough links for task ${xUsername}: Have ${allLinks.length}/${minimumLinks} minimum required links. Available admin links: ${extraAdminLinks.length}, Available member links: ${memberLinks.length}`
+        // );
 
         // Lưu thông tin về số link khả dụng để sử dụng trong thông báo lỗi
         (this as any).lastAssignmentStats = {
@@ -533,7 +540,8 @@ class TaskManager {
         { $set: { totalLinks: taskLinks.length } }
       );
 
-      logger.success(`Đã phân bổ ${taskLinks.length} link cho nhiệm vụ`);
+      // Comment out debug logs before production
+      // logger.success(`Đã phân bổ ${taskLinks.length} link cho nhiệm vụ`);
       return taskLinks;
     } catch (error) {
       logger.error(`Lỗi khi phân bổ link cho nhiệm vụ: ${error}`);
@@ -607,9 +615,9 @@ class TaskManager {
         })
         .toArray();
 
-      console.log(
-        `Found ${previousInteractions.length} completed member interactions for user ${xUsername}`
-      );
+      // console.log(
+      //   `Found ${previousInteractions.length} completed member interactions for user ${xUsername}`
+      // );
 
       // Tạo Set các postId mà người dùng đã tương tác
       const previouslyInteractedPostIds = new Set<string>(
@@ -629,9 +637,9 @@ class TaskManager {
         allExcludedPostIds.add(postId);
       }
 
-      console.log(
-        `Combined excluded posts for member links: ${allExcludedPostIds.size}`
-      );
+      // console.log(
+      //   `Combined excluded posts for member links: ${allExcludedPostIds.size}`
+      // );
 
       // Lọc các bài đăng chưa đủ tương tác, chưa được người dùng tương tác, và không nằm trong danh sách loại trừ
       const eligiblePosts = memberPosts.filter(
@@ -639,9 +647,9 @@ class TaskManager {
       );
 
       // Log chi tiết hơn về việc lọc link
-      logger.info(
-        `[${xUsername}] - Member links: ${memberPosts.length} khả dụng, ${previouslyInteractedPostIds.size} đã tương tác trước đó, ${excludePostIds.size} trong excludePostIds, còn lại ${eligiblePosts.length} có thể sử dụng (Yêu cầu: ${count} link)`
-      );
+      // logger.info(
+      //   `[${xUsername}] - Member links: ${memberPosts.length} khả dụng, ${previouslyInteractedPostIds.size} đã tương tác trước đó, ${excludePostIds.size} trong excludePostIds, còn lại ${eligiblePosts.length} có thể sử dụng (Yêu cầu: ${count} link)`
+      // );
 
       // Sắp xếp theo phương thức đã chọn
       let sortedPosts: IXPost[] = [];
@@ -696,7 +704,7 @@ class TaskManager {
     xUsername?: string
   ): Promise<IXPost[]> {
     try {
-      console.log("excludePostIds start: ", excludePostIds);
+      // console.log("excludePostIds start: ", excludePostIds);
 
       const postsCollection = getCollection<IXPost>("interactXTgPosts");
 
@@ -744,7 +752,8 @@ class TaskManager {
 
         // Lấy tất cả các task ID của người dùng
         const userTaskIds = userTasks.map((task) => task._id);
-        console.log("userTaskIds:", userTaskIds);
+        // Comment out debug logs before production
+        // console.log("userTaskIds:", userTaskIds);
 
         if (userTaskIds.length > 0) {
           // Tìm tất cả các link mà người dùng đã tương tác trước đó
@@ -758,24 +767,20 @@ class TaskManager {
             })
             .toArray();
 
-          console.log(
-            `Found ${previousInteractions.length} completed admin interactions for user ${xUsername}`
-          );
+          // console.log(
+          //   `Found ${previousInteractions.length} completed admin interactions for user ${xUsername}`
+          // );
 
           // Thêm vào Set các postId mà người dùng đã tương tác
           previousInteractions.forEach((interaction) =>
             previouslyInteractedPostIds.add(interaction.postId)
           );
 
-          logger.info(
-            `Người dùng ${xUsername} đã tương tác với ${previouslyInteractedPostIds.size} admin links trước đó`
-          );
+          // logger.info(
+          //   `Người dùng ${xUsername} đã tương tác với ${previouslyInteractedPostIds.size} admin links trước đó`
+          // );
         }
       }
-      console.log("=>>>>>>>>>>>>>>>>>>>>> previouslyInteractedPostIds:", {
-        excludePostIdsSize: excludePostIds.size,
-        previouslyInteractedPostIdsSize: previouslyInteractedPostIds.size,
-      });
 
       // Kết hợp excludePostIds với previouslyInteractedPostIds - fix cách merge Set
       const allExcludedPostIds = new Set<string>();
@@ -790,36 +795,15 @@ class TaskManager {
         allExcludedPostIds.add(postId);
       }
 
-      console.log(
-        `Combined excluded posts: ${allExcludedPostIds.size} (${Array.from(
-          allExcludedPostIds
-        )
-          .slice(0, 5)
-          .join(", ")}${allExcludedPostIds.size > 5 ? "..." : ""})`
-      );
-
       // Nếu có excludePostIds, loại bỏ các postId đã có
       if (allExcludedPostIds.size > 0) {
-        console.log("=>>>>>>>>>>>>>>>>>>>>> allExcludedPostIds if");
+        // console.log("=>>>>>>>>>>>>>>>>>>>>> allExcludedPostIds if");
         query.postId = { $nin: Array.from(allExcludedPostIds) };
       }
 
       // Lấy tất cả các post từ admin thỏa mãn điều kiện
       const adminPosts = await postsCollection.find(query).toArray();
-      console.log("=>>>>>>>>>>>>>>>>>>>>> adminPosts:", adminPosts);
-
-      // Log chi tiết hơn về việc lọc admin link
-      logger.info(
-        `[${xUsername || "N/A"}] - Admin links: ${
-          adminPosts.length
-        } khả dụng sau khi lọc (${
-          previouslyInteractedPostIds.size
-        } đã tương tác trước đó, ${
-          excludePostIds.size
-        } trong excludePostIds, tổng loại trừ: ${
-          allExcludedPostIds.size
-        }) (Yêu cầu: ${count} link)`
-      );
+      // console.log("=>>>>>>>>>>>>>>>>>>>>> adminPosts:", adminPosts);
 
       // Sắp xếp theo phương thức đã chọn
       let sortedPosts: IXPost[] = [];
@@ -1127,7 +1111,7 @@ class TaskManager {
         }
       }
 
-      console.log("allLinks: ", allLinks);
+      // console.log("allLinks: ", allLinks);
 
       // Đếm số link đã hoàn thành và đang chờ
       const pendingLinks = allLinks.filter(
@@ -1239,6 +1223,7 @@ class TaskManager {
               interactionCount: 0, // Ban đầu chưa có tương tác nào
               pendingTaskCount: 0, // Ban đầu chưa có nhiệm vụ nào pending
               requiredInteractionCount: botSetting.minimumLinksForTask,
+              telegramUserId: telegramUserId, // Thêm telegramUserId để liên kết với tài khoản Telegram
               createdAt: new Date(),
               updatedAt: new Date(),
             };
@@ -1253,7 +1238,7 @@ class TaskManager {
 
       // save links to the database
       const postDocs = await postService.createOrUpdatePosts(linkCreates);
-      console.log("postDocs: ", postDocs);
+      // console.log("postDocs: ", postDocs);
 
       return {
         success: true,
@@ -1297,7 +1282,7 @@ class TaskManager {
         xUsername,
       });
 
-      console.log("userCredit: ", userCredit);
+      // console.log("userCredit: ", userCredit);
 
       if (!userCredit) {
         return {
@@ -1451,9 +1436,6 @@ class TaskManager {
         .toArray();
 
       // Log số lượng link pending sẽ bị xóa
-      logger.info(
-        `Có ${pendingLinks.length} link pending sẽ bị xóa cho nhiệm vụ ${taskId}`
-      );
 
       // Lặp qua từng link và xóa khỏi database
       for (const link of pendingLinks) {
@@ -1489,9 +1471,9 @@ class TaskManager {
         );
       }
 
-      logger.success(
-        `Đã xóa ${pendingLinks.length} link pending của nhiệm vụ ${taskId}`
-      );
+      // logger.success(
+      //   `Đã xóa ${pendingLinks.length} link pending của nhiệm vụ ${taskId}`
+      // );
     } catch (error) {
       logger.error(
         `Lỗi khi xóa các link pending của nhiệm vụ ${taskId}: ${error}`

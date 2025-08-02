@@ -9,6 +9,7 @@ import helmet from "helmet";
 import path from "path";
 import { initializeBot } from "./services/telegramBotService";
 import { SettingsManager } from "./class";
+import { setupCache } from "./utils";
 const PORT = process.env.POST_SERVER;
 const MONGODB_URL = process.env.MONGODB_URL || "http://127.0.0.1:27017";
 const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "x-n8n-kaito";
@@ -81,6 +82,9 @@ async function serverRunner() {
   } catch (error) {
     logger.error(`Failed to initialize settings: ${error}`);
   }
+
+  // setup redis
+  await setupCache();
 
   // setup router
   await setupRouter(app);

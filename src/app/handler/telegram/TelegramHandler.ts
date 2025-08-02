@@ -205,7 +205,8 @@ class TelegramHandler {
     res,
     next
   ) {
-    console.log("getTasks request query:", req.query);
+    // Comment out debug logs before production
+    // console.log("getTasks request query:", req.query);
 
     const {
       telegramUserId,
@@ -363,7 +364,8 @@ class TelegramHandler {
     res,
     next
   ) {
-    console.log("getTgPosts request query:", req.query);
+    // Comment out debug logs before production
+    // console.log("getTgPosts request query:", req.query);
 
     const {
       postId,
@@ -443,7 +445,8 @@ class TelegramHandler {
         },
       });
     } catch (error: any) {
-      console.error("Error fetching Telegram X posts:", error);
+      // Use logger instead of console.error for production
+      logger.error(`Error fetching Telegram X posts: ${error?.message}`);
       res.status(500).json({
         ok: false,
         message: `Failed to fetch Telegram X posts: ${error?.message}`,
@@ -495,7 +498,8 @@ class TelegramHandler {
         data: result,
       });
     } catch (error: any) {
-      console.error("Error updating task link status:", error);
+      // Use logger instead of console.error for production
+      logger.error(`Error updating task link status: ${error?.message}`);
       res.status(500).json({
         ok: false,
         message: `Failed to update task link status: ${error?.message}`,
@@ -508,7 +512,8 @@ class TelegramHandler {
     res,
     next
   ) {
-    console.log("getTaskLinks request query:", req.query);
+    // Comment out debug logs before production
+    // console.log("getTaskLinks request query:", req.query);
 
     const {
       taskId,
@@ -613,7 +618,8 @@ class TelegramHandler {
         },
       });
     } catch (error: any) {
-      console.error("Error fetching task links:", error);
+      // Use logger instead of console.error for production
+      logger.error(`Error fetching task links: ${error?.message}`);
       res.status(500).json({
         ok: false,
         message: `Failed to fetch task links: ${error?.message}`,

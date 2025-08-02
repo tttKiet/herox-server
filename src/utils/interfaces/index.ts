@@ -107,6 +107,7 @@ export interface IXPost {
   username: string; // X username that posted
   type?: "member" | "admin"; // Type of post: member or admin
   interactionCount: number; // Number of times this post has been interacted with
+  telegramUserId: string | null; // Telegram user ID who created this post
   requiredInteractionCount?: number | null; // yêu cầu tương tác
   pendingTaskCount?: number;
   createdAt: Date;
@@ -204,4 +205,41 @@ export interface IGetTaskLinksQuery {
   toDate?: string;
   page?: string;
   limit?: string;
+}
+
+// InteractX API request interfaces
+export interface IInteractXAuthor {
+  rest_id: string;
+  name: string;
+  screen_name: string;
+}
+
+export interface IInteractXApiRequest {
+  likes: string; // ID của bài đăng X
+  text: string; // Hành động tương tác
+  retweets: string; // Văn bản retweet (nếu hành động là retweet)
+  quotes: string; // ID người dùng Telegram thực hiện hành động
+  replies: string; // ID người dùng Telegram thực hiện hành động (nếu có)
+}
+
+// api key
+
+export interface IApiKeyTwitter {
+  _id?: string | ObjectId;
+  apiKey: string;
+  name: string;
+  description?: string;
+  status: "active" | "inactive" | "rate_limited" | "expired" | "error";
+  lastUsed?: Date;
+  usageThisMonth: number;
+  totalUsageCount: number;
+  monthlyUsage: Record<string, number>;
+  lastError?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  rateLimit?: {
+    limit: number;
+    remaining: number;
+    reset: Date;
+  };
 }

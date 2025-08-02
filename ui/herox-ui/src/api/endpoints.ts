@@ -8,6 +8,7 @@ export const PROJECT_API = "/api/v1/project";
 export const CHAT_API = "/api/v1/ai/chats";
 export const ADMIN_MEMBERS_API = "/api/v1/admin/members";
 export const INTERACT_POSTS_API = "/api/v1/x/interact-posts";
+export const API_KEYS_API = "/api/v1/x/api-keys";
 export const TELEGRAM_USERS_API = "/api/v1/telegram/users";
 export const USER_CREDITS_API = "/api/v1/telegram/user-credits";
 export const TASKS_API = "/api/v1/telegram/tasks";

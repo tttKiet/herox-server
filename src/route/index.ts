@@ -7,6 +7,7 @@ import ManagerHandler from "../app/handler/manager";
 import SettingsHandler from "../app/handler/manager/settingsHandler";
 import TelegramHandler from "../app/handler/telegram/TelegramHandler";
 import XHandler from "../app/handler/x";
+import ApiKeyHandler from "../app/handler/x/apiKeyHandler";
 import InteractPostHandler from "../app/handler/x/interactPosts";
 
 const xHandler = new XHandler();
@@ -17,6 +18,7 @@ const authHandler = new AuthHandler();
 const chatHandler = new ChatHandler();
 const interactPostHandler = new InteractPostHandler();
 const telegramHandler = new TelegramHandler();
+const apiKeyHandler = new ApiKeyHandler();
 
 const mainRouter = Router();
 
@@ -164,6 +166,12 @@ mainRouter.post(
 mainRouter.get("/api/v1/settings", SettingsHandler.getSettings);
 mainRouter.put("/api/v1/settings", SettingsHandler.updateSettings);
 
-//
+// X API
+mainRouter.post("/api/v1/x/interact", xHandler.checkInteractPostLinks);
+
+// API Key Management
+mainRouter.post("/api/v1/x/api-keys", apiKeyHandler.createApiKey);
+mainRouter.get("/api/v1/x/api-keys", apiKeyHandler.getApiKeys);
+mainRouter.delete("/api/v1/x/api-keys", apiKeyHandler.deleteApiKey);
 
 export default mainRouter;

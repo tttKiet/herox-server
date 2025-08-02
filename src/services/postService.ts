@@ -82,6 +82,7 @@ class PostService {
               ? settings?.minimumLinkForAdmin
               : settings?.minimumLinksForTask,
           type: postData.type || "member",
+          telegramUserId: postData.telegramUserId || null, // Thêm telegramUserId, mặc định là null nếu không được cung cấp
           createdAt: new Date(),
           updatedAt: new Date(),
         };

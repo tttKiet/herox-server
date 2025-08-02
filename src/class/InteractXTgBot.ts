@@ -5,6 +5,11 @@ import { getCollection } from "../utils/mongoDb";
 import { ITelegramUser, IXPost, IInteraction } from "../utils/interfaces";
 import postService from "../services/postService";
 import interactXSettingsService from "../services/interactXSettingsService";
+import axios from "axios";
+import { configDotenv } from "dotenv";
+import { isXPostLinks } from "../app/handler/telegram/scenes/postLinks/linkUtils";
+import { redis } from "../utils";
+configDotenv();
 
 interface RegisterUserParams {
   userId: string;
@@ -565,6 +570,377 @@ class InteractXTgBot {
     } catch (error) {
       logger.error(`Error extracting post ID: ${error}`);
       return null;
+    }
+  }
+
+  /**
+   * Lấy thông tin chi tiết về post và replies của nó sử dụng X API
+   * @param postId ID của post cần lấy thông tin
+   * @param maxResults Số lượng replies tối đa cần lấy (mặc định 100)
+   * @returns Thông tin về post và replies của nó
+   */
+  async getInfoPostXApi(
+    postId: string,
+    maxResults: number = 100
+  ): Promise<{
+    success: boolean;
+    data?: any;
+    error?: string;
+    replies?: any[];
+    userMap?: Record<string, any>;
+  }> {
+    try {
+      // Lấy Bearer token từ biến môi trường
+      const bearerToken =
+        process.env.X_BEARER_TOKEN ||
+        "AAAAAAAAAAAAAAAAAAAAAFt03QEAAAAAHU3BiVYRyumDm2g0Eo%2FFBaQNy1E%3DKMKYJzgNwyCOUgayHBSKoARazw97UiwfndOn8tcq8ErW25sFTj";
+
+      if (!bearerToken) {
+        throw new Error("X Bearer token is not set in environment variables");
+      }
+
+      // Giới hạn số lượng replies
+      if (maxResults < 10 || maxResults > 100) {
+        maxResults = 100;
+      }
+
+      // Headers cho request
+      const headers = {
+        Authorization: `Bearer ${bearerToken}`,
+      };
+
+      // 1. Lấy thông tin chi tiết của post gốc
+      const postUrl = `https://api.x.com/2/tweets/${postId}?tweet.fields=created_at,author_id,conversation_id,public_metrics,entities&expansions=author_id,attachments.media_keys,referenced_tweets.id&user.fields=name,username,profile_image_url,verified&media.fields=url,preview_image_url`;
+
+      const postResponse = await axios.get(postUrl, { headers });
+      const postData = postResponse.data;
+
+      // Định nghĩa các kiểu dữ liệu cơ bản
+      interface XUser {
+        id: string;
+        name: string;
+        username: string;
+        profile_image_url?: string;
+        verified?: boolean;
+      }
+
+      interface XTweet {
+        id: string;
+        text: string;
+        author_id?: string;
+        created_at?: string;
+        conversation_id?: string;
+        public_metrics?: {
+          retweet_count?: number;
+          reply_count?: number;
+          like_count?: number;
+          quote_count?: number;
+        };
+        referenced_tweets?: Array<{
+          type: string;
+          id: string;
+        }>;
+        in_reply_to_user_id?: string;
+      }
+
+      interface EnrichedTweet {
+        id: string;
+        text: string;
+        created_at: string;
+        author_id: string;
+        conversation_id: string;
+        public_metrics: any;
+        author_username: string;
+        author_name: string;
+        author_profile_image: string | null;
+        author_verified: boolean;
+        in_reply_to_user_id?: string;
+        referenced_tweets?: Array<{
+          type: string;
+          id: string;
+        }>;
+      }
+
+      let originalTweet: XTweet | null = null;
+      const userMap: Record<string, XUser> = {};
+
+      // Xây dựng user map từ kết quả
+      if (postData.includes && postData.includes.users) {
+        postData.includes.users.forEach((user: XUser) => {
+          userMap[user.id] = user;
+        });
+      }
+
+      if (postData.data) {
+        originalTweet = postData.data as XTweet;
+      }
+
+      // Tạo object dữ liệu post gốc
+      let enrichedOriginalTweet: EnrichedTweet | null = null;
+      if (originalTweet) {
+        const author = originalTweet.author_id
+          ? userMap[originalTweet.author_id] || {
+              id: "",
+              name: "Unknown User",
+              username: "unknown",
+            }
+          : { id: "", name: "Unknown User", username: "unknown" };
+
+        enrichedOriginalTweet = {
+          id: originalTweet.id || postId,
+          text: originalTweet.text || "",
+          created_at: originalTweet.created_at || new Date().toISOString(),
+          author_id: originalTweet.author_id || "",
+          conversation_id: originalTweet.conversation_id || postId,
+          public_metrics: originalTweet.public_metrics || {},
+          author_username: author.username || "unknown",
+          author_name: author.name || "Unknown User",
+          author_profile_image: author.profile_image_url || null,
+          author_verified: !!author.verified,
+        };
+      }
+
+      // 2. Lấy danh sách replies sử dụng conversation_id
+      // Theo tài liệu X API mới, sử dụng endpoint search recent tweets với query conversation_id
+      const conversationId = originalTweet?.conversation_id || postId;
+      const repliesUrl = `https://api.x.com/2/tweets/search/recent?query=conversation_id:${conversationId}&tweet.fields=created_at,author_id,in_reply_to_user_id,referenced_tweets&expansions=author_id,referenced_tweets.id&user.fields=name,username,profile_image_url,verified&max_results=${maxResults}`;
+
+      const repliesResponse = await axios.get(repliesUrl, { headers });
+      const repliesData = repliesResponse.data;
+
+      // Cập nhật userMap từ replies
+      if (repliesData.includes && repliesData.includes.users) {
+        repliesData.includes.users.forEach((user: XUser) => {
+          userMap[user.id] = user;
+        });
+      }
+
+      // Lọc chỉ lấy replies cho post hiện tại
+      const replies: XTweet[] = [];
+      if (repliesData.data) {
+        repliesData.data.forEach((tweet: XTweet) => {
+          // Kiểm tra xem đây có phải là reply cho post gốc không
+          const isReplyToOriginal =
+            tweet.referenced_tweets &&
+            tweet.referenced_tweets.some(
+              (ref) =>
+                ref.type === "replied_to" &&
+                (ref.id === postId || ref.id === conversationId)
+            );
+
+          if (isReplyToOriginal && tweet.id !== postId) {
+            replies.push(tweet);
+          }
+        });
+      }
+
+      // Làm giàu thông tin replies với dữ liệu user
+      const enrichedReplies: EnrichedTweet[] = replies.map((reply) => {
+        const author = reply.author_id
+          ? userMap[reply.author_id] || {
+              id: "",
+              name: "Unknown User",
+              username: "unknown",
+            }
+          : { id: "", name: "Unknown User", username: "unknown" };
+
+        return {
+          id: reply.id,
+          text: reply.text,
+          created_at: reply.created_at || new Date().toISOString(),
+          author_id: reply.author_id || "",
+          conversation_id: reply.conversation_id || conversationId,
+          public_metrics: reply.public_metrics || {},
+          author_username: author.username || "unknown",
+          author_name: author.name || "Unknown User",
+          author_profile_image: author.profile_image_url || null,
+          author_verified: !!author.verified,
+          in_reply_to_user_id: reply.in_reply_to_user_id,
+          referenced_tweets: reply.referenced_tweets || [],
+        };
+      });
+
+      return {
+        success: true,
+        data: enrichedOriginalTweet,
+        replies: enrichedReplies,
+        userMap: userMap,
+      };
+    } catch (error: any) {
+      logger.error(`Error fetching post info from X API: ${error.message}`);
+
+      // Xử lý các lỗi cụ thể
+      if (error.response) {
+        // Nếu có response từ API
+        const status = error.response.status;
+        const responseData = error.response.data;
+
+        // Log chi tiết hơn về lỗi
+        logger.error(`X API error ${status}: ${JSON.stringify(responseData)}`);
+
+        // Xử lý các mã lỗi phổ biến
+        if (status === 401) {
+          return {
+            success: false,
+            error: "Invalid authentication credentials",
+          };
+        } else if (status === 403) {
+          return {
+            success: false,
+            error:
+              "Forbidden - You don't have permission to access this resource",
+          };
+        } else if (status === 404) {
+          return { success: false, error: "Post not found" };
+        } else if (status === 429) {
+          return {
+            success: false,
+            error: "Rate limit exceeded. Please try again later.",
+          };
+        }
+
+        return { success: false, error: `X API error: ${status}` };
+      }
+
+      // Lỗi khác
+      return {
+        success: false,
+        error: `Failed to fetch post info: ${error.message}`,
+      };
+    }
+  }
+
+  // getInfoPostX
+  async getInfoPostX(postId: string) {
+    const xRapidapiKey = process.env.X_RAPIDAPI_KEY;
+    const domain = "https://twitter293.p.rapidapi.com/tweet/simple";
+    if (!xRapidapiKey) {
+      throw new Error("X RapidAPI key is not set in environment variables");
+    }
+
+    const headers = {
+      "x-rapidapi-key": xRapidapiKey,
+      "x-rapidapi-host": "twitter293.p.rapidapi.com",
+    };
+
+    // call api
+    try {
+      const response = await axios(`${domain}/${postId}`, {
+        method: "GET",
+        headers,
+      });
+
+      return response.data;
+    } catch (error) {
+      logger.error(`Error getting post info: ${error}`);
+      return null;
+    }
+  }
+
+  async checkCommentPostX(usernames: string, post: string) {
+    // post can: id | string url
+    const isLink = isXPostLinks(post);
+    let postId: string = post;
+    if (isLink) {
+      const postIdGetter = this.extractPostIdFromUrl(post);
+      if (!postIdGetter) {
+        logger.error(`Invalid post URL: ${post}`);
+        return null;
+      }
+      postId = postIdGetter;
+    }
+    console.log("postId: ", postId);
+
+    // Sử dụng phương thức cached để tối ưu hiệu suất
+    const data = await this.getCachedInfoPostXApi(postId);
+    console.log("data: ", data);
+    // const { likes, retweets, replies, author, thread } = data;
+    // console.log("thread: ", thread);
+
+    return data;
+  }
+
+  /**
+   * Cached version of getInfoPostXApi - Fetches and caches post information from X API
+   * Uses Redis for caching to reduce API calls and improve performance
+   * @param postId ID của post cần lấy thông tin
+   * @param maxResults Số lượng replies tối đa cần lấy (mặc định 100)
+   * @param cacheTTL Thời gian cache hết hạn tính bằng giây (mặc định 1 giờ)
+   * @returns Thông tin về post và replies của nó
+   */
+  async getCachedInfoPostXApi(
+    postId: string,
+    maxResults: number = 100,
+    cacheTTL: number = 3600
+  ): Promise<{
+    success: boolean;
+    data?: any;
+    error?: string;
+    replies?: any[];
+    userMap?: Record<string, any>;
+    fromCache?: boolean;
+  }> {
+    try {
+      // Tạo khóa cache
+      const cacheKey = `x_post_info:${postId}`;
+
+      // Kiểm tra xem dữ liệu đã được cache chưa
+      const cachedData = await redis.get(cacheKey);
+
+      if (cachedData) {
+        logger.info(`Using cached data for X post ${postId}`);
+        return {
+          ...cachedData,
+          fromCache: true,
+        };
+      }
+
+      // Nếu không có dữ liệu cache, gọi API để lấy thông tin
+      logger.info(`Fetching fresh data for X post ${postId}`);
+      const apiResult = await this.getInfoPostXApi(postId, maxResults);
+
+      // Nếu API call thành công, lưu kết quả vào cache
+      if (apiResult.success) {
+        await redis.set(cacheKey, apiResult, cacheTTL);
+        logger.info(
+          `Cached X post data for ${postId}, expires in ${cacheTTL}s`
+        );
+      }
+
+      return {
+        ...apiResult,
+        fromCache: false,
+      };
+    } catch (error: any) {
+      logger.error(`Error in cached info post retrieval: ${error.message}`);
+      return {
+        success: false,
+        error: `Failed to retrieve post info: ${error.message}`,
+        fromCache: false,
+      };
+    }
+  }
+
+  /**
+   * Xóa cache cho một post cụ thể
+   * @param postId ID của post cần xóa khỏi cache
+   * @returns Kết quả xóa cache
+   */
+  async invalidatePostCache(postId: string): Promise<boolean> {
+    try {
+      const cacheKey = `x_post_info:${postId}`;
+      const result = await redis.del(cacheKey);
+
+      if (result) {
+        logger.info(`Cache invalidated for X post ${postId}`);
+      } else {
+        logger.info(`No cache found for X post ${postId}`);
+      }
+
+      return result;
+    } catch (error: any) {
+      logger.error(`Error invalidating cache: ${error.message}`);
+      return false;
     }
   }
 }

@@ -7,9 +7,11 @@ import { setupDB } from "./utils/mongoDb";
 import { logger } from "./utils/logger";
 import helmet from "helmet";
 import path from "path";
-import { initializeBot } from "./services/telegramBotService";
 import { SettingsManager } from "./class";
 import { setupCache } from "./utils";
+import { ApiKeyTwitterManager } from "./class/ApiKeyTwitterManager";
+import PromptService from "./class/PromptService";
+import AdminHandler from "./app/handler/admin";
 const PORT = process.env.POST_SERVER;
 const MONGODB_URL = process.env.MONGODB_URL || "http://127.0.0.1:27017";
 const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "x-n8n-kaito";
@@ -89,12 +91,16 @@ async function serverRunner() {
   // setup router
   await setupRouter(app);
 
+  // set dedault api key
+  const adminHandler = new AdminHandler();
+  const promptService = new PromptService();
+
+  await adminHandler.seedDefaultKey();
+  await promptService.seedWeb3DefaultPrompt();
+
   app.listen(PORT, () =>
     logger.info(`Server running on http://localhost:${PORT}`)
   );
-
-  // setup bot telegram
-  await initializeBot();
 }
 
 serverRunner();

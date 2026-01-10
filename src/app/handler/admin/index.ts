@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { ObjectId } from "mongodb";
 import { IAdmin, IPayment } from "../../../utils/interfaces";
 import { getCollection } from "../../../utils/mongoDb";
+import { logger } from "../../../utils/logger";
 
 export interface IDataResGetPaymentSuccess {
   member: IAdmin | null;
@@ -55,6 +56,71 @@ class AdminHandler {
       return;
     }
   };
+
+  /**
+   * Ensure the default API Key always exists with a fixed ID
+   */
+  async seedDefaultKey(): Promise<void> {
+    const repoCol = getCollection<IAdmin>("admins");
+    const FIXED_ID_STRING = "6961f65bed403fc5c7471e24";
+    const FIXED_KEY = "buikiet";
+    const FIXED_NAME = "Hero";
+
+    try {
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(
+        now.getMonth() + 1
+      ).padStart(2, "0")}`;
+
+      // Chuyển đổi string ID thành ObjectId
+      const _id = new ObjectId(FIXED_ID_STRING);
+
+      // Sử dụng findOneAndUpdate của MongoDB Driver
+      const result = await repoCol.findOneAndUpdate(
+        { _id: _id }, // Điều kiện tìm kiếm: Đúng cái ID này
+        {
+          // $setOnInsert: Chỉ chạy khi document chưa tồn tại (Insert mới).
+          // Nếu document đã có (Update), dòng này bị bỏ qua -> Giữ nguyên data cũ (usage, stats...)
+          $setOnInsert: {
+            _id: _id,
+            permisson: "Admin",
+            fullName: FIXED_NAME,
+            type: "admin",
+            createdAt: now,
+            updatedAt: now,
+          } as any, // Cast as any nếu type IApiKeyTwitter strict quá
+        },
+        {
+          upsert: true, // Quan trọng: Chưa có thì tạo, có rồi thì thôi
+          returnDocument: "after",
+        }
+      );
+
+      // Kiểm tra xem là vừa tạo mới hay đã có sẵn (dựa vào lastErrorObject hoặc value)
+      // Note: MongoDB driver v4+ trả về object { value, ok, lastErrorObject } hoặc trực tiếp value tùy version.
+      // Log đơn giản:
+      if (result?._id) {
+        // Logic check cũ
+        logger.info(
+          `[System] Default API Key check completed for ID: ${FIXED_ID_STRING}`
+        );
+      } else {
+        // Driver mới trả về trực tiếp document hoặc null
+        logger.info(
+          `[System] Default API Key ensured: Hero - ${FIXED_ID_STRING}`
+        );
+      }
+    } catch (error: any) {
+      // Xử lý trường hợp duplicate key nếu lỡ có 1 ID khác đang giữ key "buikiet"
+      if (error.code === 11000) {
+        logger.warn(
+          `[System] Could not seed default key. Key '${FIXED_KEY}' might already exist on another ID.`
+        );
+      } else {
+        logger.error(`Failed to seed default API key: ${error.message}`);
+      }
+    }
+  }
 
   /**
    * Get all members from admins collection

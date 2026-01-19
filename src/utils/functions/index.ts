@@ -1,3 +1,7 @@
+import axios from "axios";
+import { IBodyV98 } from "../interfaces";
+import { text } from "telegraf/typings/button";
+
 export function isRootAdmin(apiKey: string): boolean {
   return true;
 }
@@ -8,6 +12,7 @@ export function isRootAdmin(apiKey: string): boolean {
 export enum AIProvider {
   DEEPSEEK = "deepseek",
   GEMINI = "gemini",
+  V98 = "V98",
   UNKNOWN = "unknown",
 }
 
@@ -42,6 +47,24 @@ export function checkAPIKeyProvider(apiKey: string): IAPIKeyCheck {
       provider: AIProvider.UNKNOWN,
       message: "API key cannot be empty",
     };
+  }
+
+  // Format: v98|<model-name>|<api-key> (bắt đầu bằng "v98|")
+  if (trimmedKey.startsWith("v98|")) {
+    if (trimmedKey.length >= 10) {
+      // Tối thiểu v98- + ít nhất 6 ký tự
+      return {
+        isValid: true,
+        provider: AIProvider.V98,
+        message: "Valid V98 API key",
+      };
+    } else {
+      return {
+        isValid: false,
+        provider: AIProvider.V98,
+        message: "V98 API key too short (should be v98-...)",
+      };
+    }
   }
 
   // Kiểm tra DeepSeek API key
@@ -101,6 +124,11 @@ export function isDeepSeekAPIKey(apiKey: string): boolean {
   return check.isValid && check.provider === AIProvider.DEEPSEEK;
 }
 
+export function isV98APIKey(apiKey: string): boolean {
+  const check = checkAPIKeyProvider(apiKey);
+  return check.isValid && check.provider === AIProvider.V98;
+}
+
 /**
  * Kiểm tra có phải Gemini API key không
  * @param apiKey - API key cần kiểm tra
@@ -137,4 +165,95 @@ export function removeTextInParentheses(text: string): string {
 
   // Sử dụng regex để xoá tất cả nội dung trong dấu ngoặc đơn
   return text.replace(/\([^)]*\)/g, "");
+}
+
+export async function fetchAIV98(
+  apiKey: string,
+  body: IBodyV98,
+  retryCount = 0,
+): Promise<string> {
+  const maxRetries = 2;
+  const timeoutMs = 400000; // 400 seconds
+
+  try {
+    const rawBody = {
+      model: body.model,
+      input: [
+        {
+          role: "developer",
+          content: body.systemMessage,
+        },
+
+        {
+          role: "user",
+          content: [{ type: "input_text", text: body.userMessage }],
+        },
+      ],
+      tools: [],
+      text: { format: { type: "text" }, verbosity: "medium" },
+      reasoning: { effort: "medium", summary: "auto" },
+      stream: false,
+      store: true,
+    };
+
+    const res = await axios.post("https://v98store.com/v1/responses", rawBody, {
+      headers: {
+        Authorization: "Bearer " + apiKey,
+        "Content-Type": "application/json",
+      },
+      timeout: timeoutMs,
+    });
+
+    const resp = res.data;
+
+    if (res.status >= 200 && res.status < 300) {
+      const chatResp = resp.output
+        ?.find((x) => x.type === "message")
+        ?.content?.find((p) => p.type === "output_text")?.text;
+
+      return chatResp;
+    } else {
+      console.log("Error ----------------------------------:");
+      console.log("Body: ", { apiKey, body });
+
+      if (resp?.error) {
+        console.log("error message:", resp.error.message);
+        console.log("error type:", resp.error.type);
+        console.log("error code:", resp.error.code);
+      }
+      throw new Error(
+        resp?.error?.message ||
+          `Đã có lỗi xảy ra gọi AI! Status: ${res.status}`,
+      );
+    }
+  } catch (error: any) {
+    // Log chi tiết nội dung lỗi từ axios
+    console.log("Error: ", error);
+    // Retry logic cho timeout errors
+    const isTimeoutError =
+      error.code === "ECONNABORTED" ||
+      error.code === "UND_ERR_CONNECT_TIMEOUT" ||
+      error.message?.includes("timeout") ||
+      error.message?.includes("Network Error");
+
+    if (isTimeoutError && retryCount < maxRetries) {
+      const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+      console.log(
+        `Retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return fetchAIV98(apiKey, body, retryCount + 1);
+    }
+
+    // Nếu đã retry hết hoặc không phải timeout error
+    const errorMessage = isTimeoutError
+      ? `Timeout kết nối tới V98 API sau ${
+          maxRetries + 1
+        } lần thử. Vui lòng kiểm tra kết nối mạng.`
+      : error.response?.data?.error?.message ||
+        error?.message ||
+        "Đã có lỗi xảy ra gọi AI catch!";
+
+    throw new Error(errorMessage);
+  }
 }

@@ -4,8 +4,10 @@ import GeminiAI from "../../../class/GeminiHandler";
 import N8nHelper from "../../../class/N8nHelper";
 import PromptService from "../../../class/PromptService";
 import {
+  fetchAIV98,
   isDeepSeekAPIKey,
   isGeminiAPIKey,
+  isV98APIKey,
   removeTextInParentheses,
 } from "../../../utils/functions";
 import { IChat } from "src/utils/interfaces";
@@ -146,6 +148,30 @@ class AiHandler {
             (err) => {
               logger.error(
                 `Error processing Gemini chat request ${chatDoc._id}: ${err.message}`
+              );
+            }
+          );
+
+          return;
+        } else if (isV98APIKey(chatKey)) {
+          // Xử lý bởi AI agent
+          const chatDoc = await createChatHistory({ userMessage }, apiKey);
+
+          // Trả về document với trạng thái pending cho client
+          res.status(200).json({
+            ok: true,
+            message: "Chat request queued successfully!",
+            data: chatDoc,
+          });
+
+          const modelName = chatKey.split("|")[1];
+          const v98Key = chatKey.split("|")[2];
+
+          // Xử lý bởi agent n8n, gọi AI agent và cập nhât kết quả
+          processV98AiRequest(chatDoc, apiKey, v98Key, modelName).catch(
+            (err) => {
+              logger.error(
+                `Error processing chat request ${chatDoc._id}: ${err.message}`
               );
             }
           );
@@ -438,6 +464,65 @@ async function processGeminiRequest(
     );
     logger.error(
       `Error processing Gemini chat request ${chat._id}: ${error.message}`
+    );
+  }
+}
+
+async function processV98AiRequest(
+  chat: IChat,
+  apiKey: string,
+  chatKey: string,
+  model: string = "gpt-5-nano-2025-08-07"
+): Promise<void> {
+  try {
+    // gpt-5-2025-08-07 gpt-5-nano-2025-08-07
+    // v98 key format: v98|<model-name>|<api-key>
+
+    const chatCollection = getCollection<IChat>("chats");
+
+    // Lấy prompt từ service
+    const promptCmtPicked = await promptService.pickPrompt({
+      type: "PROMPT_CMT",
+      memberId: apiKey,
+    });
+    const promptCmt = promptCmtPicked.context;
+    const sysMsg = promptCmt.toString();
+
+    // Gọi Gemini API
+    const respAi = await fetchAIV98(chatKey, {
+      model: model,
+      systemMessage: sysMsg,
+      userMessage: chat.userMessage,
+    });
+
+    // Cập nhật document với kết quả thành công
+    await chatCollection.updateOne(
+      { _id: chat._id },
+      {
+        $set: {
+          status: "success",
+          aiContent: removeTextInParentheses(respAi),
+          updatedAt: new Date(),
+          provider: model,
+        },
+      }
+    );
+  } catch (error: any) {
+    // Cập nhật document với trạng thái lỗi
+    const chatCollection = getCollection<IChat>("chats");
+    await chatCollection.updateOne(
+      { _id: chat._id },
+      {
+        $set: {
+          status: "error",
+          message: error.message || "V98 error occurred",
+          updatedAt: new Date(),
+          provider: "v98:" + model,
+        },
+      }
+    );
+    logger.error(
+      `Error processing V98 chat request ${chat._id}: ${error.message}`
     );
   }
 }

@@ -1,0 +1,82 @@
+services:
+  # # Mongo DB
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=herox
+      - MONGO_INITDB_ROOT_PASSWORD=123@123
+    restart: unless-stopped
+    networks:
+      - herox-network
+
+  # Redis
+  redis:
+    image: redis:latest
+    container_name: redis-server
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-heroxredis}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - herox-network
+
+  # Node.js App
+  app:
+    build:
+      context: .
+      dockerfile: .dh-build/Dockerfile
+    container_name: herox-server
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - LOG_DEBUG=false
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-heroxredis}
+    restart: unless-stopped
+    volumes:
+      - ./assets:/app/assets
+    networks:
+      - herox-network
+
+  herox-ui:
+    build:
+      context: .
+      dockerfile: .dh-build/Dockerfile.UI
+    container_name: herox-ui
+    ports:
+      - "4454:8080"
+    depends_on:
+      - app
+    env_file:
+      - ./ui/herox-ui/.env
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_BASE_URL=http://app:3000
+
+    restart: unless-stopped
+    networks:
+      - herox-network
+
+volumes:
+  mongodb_data:
+  n8n_data:
+  n8n_local_file:
+  redis_data:
+
+networks:
+  herox-network:
+    driver: bridge

@@ -243,3 +243,9 @@ export interface IApiKeyTwitter {
     reset: Date;
   };
 }
+
+export interface IBodyV98 {
+  model: string;
+  systemMessage: string;
+  userMessage: string;
+}
